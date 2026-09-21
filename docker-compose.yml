@@ -1,0 +1,23 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: club-management-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-club_management}
+      MYSQL_USER: ${MYSQL_USER:-club_app}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-replace_me}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-replace_me_too}
+      TZ: Asia/Shanghai
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - club_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-replace_me_too}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  club_mysql_data:
