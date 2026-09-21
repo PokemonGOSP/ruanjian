@@ -125,6 +125,8 @@ npm.cmd run build
 
 ## Ownership
 
+团队统一阅读入口：`docs/team/README.md`。其中按全员、负责人、成员 A/B/C 分类列出正式需求基线、工程封装、API 契约、验收记录和操作命令。
+
 - Leader / Integration：M01、公共层、Migration、Seed、集成和 CR
 - Member A：M02、M03
 - Member B：M04
