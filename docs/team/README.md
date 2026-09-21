@@ -53,7 +53,15 @@
 - 不实现范围外的 SSO、支付、签到、多级审批、外部通知等功能。
 - M02～M07 当前是 Skeleton；每项实现必须同时覆盖 API、数据库、权限、测试和文档。
 
-## 4. 常用命令
+## 4. Git 分支规则
+
+- 禁止直接在 `main` 上开发业务功能。
+- `main` 只接收已经验证、准备集成的代码。
+- 负责人使用 `feature/m01-auth`；成员 A 使用 `feature/m02-m03-club-member`；成员 B 使用 `feature/m04-activity`；成员 C 使用 `feature/m05-m06-m07-ops`。
+- 开发、测试和提交均在各自 `feature/...` 分支完成，验证通过后再合并到 `main`。
+- 不使用 `git push --force`；合并前必须确认工作区干净、测试通过且没有未处理的 `CR/EI`。
+
+## 5. 常用命令
 
 ```powershell
 docker compose up -d mysql
