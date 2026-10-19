@@ -57,22 +57,24 @@ R01 是默认登录学生身份；R02 是“用户—具体 Club”授权记录�
 | `ActivityCreateInput` | `club_id`（integer；是）；`title`（string；是；1～200）；`description`（string；是；1～5000）；`location`（string；是；1～255）；`starts_at`（datetime；是）；`ends_at`（datetime；是，且晚于开始）；`registration_deadline`（datetime；否，早于开始）；`capacity`（integer；否；1～10000）；`budget_amount`（decimal(12,2)；否；0～9999999999.99） | `id`、全部业务字段、`review_status`、`execution_status`、`created_by`、时间戳。 |
 | `ActivitySubmitOrWithdrawInput` | `action`（enum；是；`SUBMIT`/`WITHDRAW`） | `review_status`。只有授权 R02 能操作本 Club；撤回仅限其本 Club 提交且“待审核”的申请。 |
 | `ActivityReviewInput` | 使用 `ReviewInput` | `review_status`、审核意见与时间。 |
-| `ActivityPublishInput` | `action`（固定 `PUBLISH`） | `execution_status` 为“已发布”。 |
+| `ActivityPublishInput` | `action`（固定 `PUBLISH`） | 当报名窗口开放时，`execution_status` 由“未发布”变为“报名中”；“已发布”不是状态值。 |
 | `ActivityRegistrationInput` | `activity_id`（integer；是） | `id`、`activity_id`、`student_user_id`、`status`（`REGISTERED`/`CANCELLED`）、`created_at`。 |
-| `ActivityExecutionInput` | `action`（enum；是；`CANCEL`/`FINISH`/`ARCHIVE`）；`reason`（string；取消时必填 1～1000，其他可空） | `execution_status`（“已取消/已结束/已归档”）、操作时间。 |
+| `ActivityExecutionInput` | `action`（enum；是；`CANCEL`/`FINISH`/`ARCHIVE`）；`reason`（string；取消时必填 1～1000，其他可空） | `CANCEL` 后执行状态为“已取消”；`FINISH` 后为“已结束”；`ARCHIVE` 仅为已结束活动写入 `archived_at`，不产生“已归档”执行状态。 |
 
-活动审核状态和执行状态分离。执行状态仅使用“未发布、已发布、进行中、已结束、已取消、已归档”。报名只对“已发布”、未到报名截止、且未满员的活动开放；没有活动签到字段或接口。
+活动审核状态和执行状态分离。执行状态仅使用“未发布、报名中、报名截止、进行中、已结束、已取消”。报名只对“报名中”、未到报名截止、且未满员的活动开放；没有活动签到字段或接口。
 
 ## 5. 经费、通知、统计与审计（FR-17～FR-22）
 
 | 数据对象 | 字段（类型；必填；约束） | 输出关键字段 |
 |---|---|---|
-| `FinanceRecordInput` | `club_id`（integer；是）；`activity_id`（integer；否，若给出必须属于该 Club）；`record_type`（enum；是；`INCOME`/`EXPENSE`）；`amount`（decimal(12,2)；是；0.01～9999999999.99）；`occurred_on`（date；是）；`description`（string；是；1～500）；`voucher_reference`（string；否；1～255） | `id`、上述字段、`record_status`（`VALID`/`VOIDED`）、`created_by`、`voided_at`、`void_reason`。不包含支付、报销审核或实际财务结算字段。 |
+| `FinanceRecordInput` | `club_id`（integer；是）；`activity_id`（integer；否，若给出必须属于该 Club）；`record_type`（enum；是；`INCOME`/`EXPENSE`）；`amount`（decimal(12,2)；是；0.01～9999999999.99）；`occurred_on`（date；是）；`description`（string；是；1～500）；`voucher_reference`（string；否；1～255）；`attachments`（对象数组；否；0～5 个） | `id`、上述字段、`record_status`（`VALID`/`VOIDED`）、`created_by`、`voided_at`、`void_reason`。不包含支付、报销审核或实际财务结算字段。 |
 | `FinanceQuery` | `club_id`（integer；否，取值须在可见范围）；`activity_id`（integer；否）；`record_type`（enum；否）；`date_from/date_to`（date；否，若均有则 from≤to） | `items`、`income_total`、`expense_total`、`net_total`；作废记录不计入汇总。 |
 | `BusinessNotificationOutput` | 由业务事件产生，无用户自定义外部渠道输入 | `id`、`recipient_user_id`、`title`、`content`、`is_read`、`created_at`、`read_at`。 |
 | `ManagementNotificationInput` | `target_type`（enum；是；`USER`/`ROLE`/`CLUB`）；`target_ids`（integer 数组；是；1～1000 个且每个为正数）；`title`（string；是；1～200）；`content`（string；是；1～5000） | 每个目标的站内通知记录。当前不输出邮件、短信、企业微信或校内消息平台调用。 |
 | `ReportQuery` | `dimension`（enum；是；`CLUB`/`MEMBER`/`ACTIVITY`/`REGISTRATION`/`FINANCE`）；`club_id/activity_id`（integer；否）；`date_from/date_to`（date；否，from≤to）；`format`（enum；否；`JSON`/`CSV`，缺省 `JSON`） | JSON 为 `summary` 与 `items`；CSV 固定 UTF-8、逗号分隔、首行字段名，HTTP `Content-Type: text/csv; charset=utf-8`。不支持 XLSX/PDF。 |
 | `AuditLogOutput` | 查询过滤：`actor_user_id`、`operation_type`、`date_from/date_to`（均可选，日期范围合法） | `id`、`actor_user_id`、`operation_type`、`target_type`、`target_id`、`result`、`occurred_at`。普通用户没有删除或修改入口。 |
+
+`attachments` 中每项为 `AttachmentMetadataInput`：`file_name`（string；是；1～255）、`content_type`（enum；是；`application/pdf`、`image/jpeg`、`image/png`）、`size_bytes`（integer；是；1～10,485,760）、`storage_ref`（string；是；1～255）。任一项超出类型、大小或数量限制返回 `40001`；课程原型可只保存元数据或本地模拟引用，不要求第三方文件存储、发票验真或财务审核。
 
 ## 6. 字段与页面/接口的一致性原则
 
@@ -80,3 +82,13 @@ R01 是默认登录学生身份；R02 是“用户—具体 Club”授权记录�
 - 查询输出仅可包含调用者在 FR-02 授权范围内的字段和记录。
 - 枚举显示文案可中文化，但持久化/API 值使用本字典的固定代码；状态展示仍使用 V1.1 的固定中文状态词。
 - 任何新增字段、导出格式、错误码或外部集成均不是本次补充件授权范围，须先记录 CR。
+
+## 7. 个人信息最小化与展示规则（CR-07）
+
+| 数据类别 | 当前可收集字段 | 可见范围 | 导出与保留约束 |
+|---|---|---|---|
+| 账号基本信息 | `username`、`display_name`、账号状态 | 本人；R04 仅为账号管理读取必要字段 | 默认统计/CSV 不导出；课程验收结束或测试库重置后 30 天内删除或不可逆匿名化。 |
+| 社团联系人 | `contact_name`、`contact_phone`、可选 `advisor_contact` | 注册申请由申请人本人和 R03 查看；获准社团资料由对应 Club 的 R02 和 R03 查看 | 默认统计/CSV 不导出；不作为活动公开详情字段。 |
+| 审计信息 | `actor_user_id`、操作类型、对象、结果、时间 | R04；R03 仅按既有 FR 的业务查询范围读取 | 不记录密码、JWT、完整联系电话或附件二进制内容。 |
+
+当前课程原型不收集学号、身份证号、支付账户、精确位置或生物特征。若后续需要收集或导出任何上述信息，必须先通过 CR 定义用途、角色范围、保留期限和验收方法。

@@ -11,6 +11,7 @@
 | `REQUIREMENTS_DATA_DICTIONARY.md` | 字段级输入/输出、格式、取值、错误码与导出约定。 |
 | `ACCEPTANCE_CRITERIA_FULL.md` | FR-01～FR-23 的完整编号化验收标准（正常和异常/权限）。 |
 | `PERFORMANCE_TEST_BASELINE.md` | NFR-PERF 的测试环境、数据集、工具版本和判定方法。 |
+| `USABILITY_COMPATIBILITY_TEST_CHECKLIST.md` | NFR-USE/NFR-COMP 的步骤计数、权限可见性与浏览器验收记录模板。 |
 | `REQUIREMENTS_TRACEABILITY.md` | 问题—场景—FR—验收—变更的追溯矩阵。 |
 
 ## B. AI 协作记录
@@ -21,7 +22,9 @@
 | `AI_REVIEW_NOTES_ROUND1.md` | Round 1 原始建议、备选项与负责人审查结果。 |
 | `AI_COLLAB_LOG_ROUND2.md` | Round 2 根据 D01～D08 固化 V1 的过程记录。 |
 | `AI_COLLAB_LOG_ROUND3.md` | Round 3 变更和一致性处理的原始过程记录。 |
+| `AI_COLLAB_LOG_ROUND4.md` | Round 4 依据评分反馈的状态对齐、NFR 细化和人工改写对照。 |
 | `CHANGE_REQUESTS_ROUND3.md` | CR-01～CR-05 的变更提出、影响与处理记录。 |
+| `CHANGE_REQUESTS_ROUND4.md` | CR-06～CR-07 的状态对齐与隐私/附件细化记录。 |
 
 ## C. 人工核实说明
 
