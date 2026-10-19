@@ -9,6 +9,20 @@
 3. [`ENGINEERING_VALIDATION_V0_1.md`](../../ENGINEERING_VALIDATION_V0_1.md)：MySQL、Migration、Seed、认证链和前端构建验证结果。
 4. [`README.md`](../../README.md)：环境安装、启动、Migration、Seed、测试和构建命令。
 
+## 1.1 课程实验提交材料
+
+- [`REQUIREMENTS_ANALYSIS_FINAL.md`](../../REQUIREMENTS_ANALYSIS_FINAL.md)：展开后的需求分析正文。
+- [`REQUIREMENTS_TRACEABILITY.md`](../../REQUIREMENTS_TRACEABILITY.md)：需求来源、FR、验收和变更追踪矩阵。
+- [`AI_COLLABORATION_RECORD.md`](../../AI_COLLABORATION_RECORD.md)：Round 1～3 AI 协作汇总记录。
+- [`MANUAL_VERIFICATION_NOTES.md`](../../MANUAL_VERIFICATION_NOTES.md)：人工确认、核实边界和待核实事项。
+- [`CHANGE_REQUESTS_ROUND3.md`](../../CHANGE_REQUESTS_ROUND3.md)：CR-01～CR-05 变更记录。
+
+## 1.2 设计阶段提交材料
+
+- [`DESIGN_DOCUMENT_V0_1.md`](../../DESIGN_DOCUMENT_V0_1.md)：架构、模块、接口、数据、流程、界面、非功能、异常、权衡和测试设计。
+- [`DESIGN_REQUIREMENTS_BASELINE.md`](../../DESIGN_REQUIREMENTS_BASELINE.md)：设计文档与实验 1 需求基线的编号对照。
+- [`DESIGN_CHANGE_NOTES_V0_1.md`](../../DESIGN_CHANGE_NOTES_V0_1.md)：设计阶段需求变更说明；当前结论为无新需求变更。
+
 ## 2. 按角色阅读
 
 ### 项目负责人 / Integration
