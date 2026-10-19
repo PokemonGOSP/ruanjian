@@ -50,6 +50,18 @@ Docker Compose MySQL 8.4 :3306
 
 课程环境使用 Docker Compose 提供 MySQL；Alembic 负责结构迁移，Seed 负责本地虚构测试数据。生产级反向代理、横向扩容和高可用不在本课程范围内。
 
+### 2.3 组件依赖与模块调用边界
+
+```text
+Vue View → Axios client → Router → Auth/Permission Dependency → Module Service → Repository → MySQL
+                                      │                         │
+                                      └── M01 identity/scope ───┘
+M02/M03/M04/M05/M06/M07 Service ──可调用── M01 的已公开权限、审计与通知门面
+M02/M03/M04/M05/M06/M07 Service ──禁止── 直接访问其他模块 Repository 或绕过 Service 写表
+```
+
+允许的跨模块协作必须由发起业务模块的 Service 在同一事务或明确的服务调用中完成：M02 注册审核可调用 M01 授予 R02 并调用 M06 生成通知；M04 取消活动可调用 M06；M05 作废可调用 M07 审计。Router、Vue 或 Repository 不得跨越 Service 直接改状态/写入其他模块表。M01 只提供身份、授权和审计基础能力，不替代 R03 审核业务。
+
 ## 3. 模块设计与边界
 
 | 模块 | 职责 | 主要接口/数据 | 负责人 |
@@ -87,7 +99,7 @@ Docker Compose MySQL 8.4 :3306
 
 ### 4.3 业务接口族
 
-完整方法/路径/FR/角色/schema 对照见 `docs/api/API_CONTRACT_V0_1.md`。接口族边界如下：
+本次提交必须同时附上 `docs/api/API_CONTRACT_V0_1.md`；该附件逐端点给出方法、路径、FR、角色/资源归属、请求/响应 schema、状态要求、错误码和 Skeleton/implemented 状态。总数为 **56** 个端点，其中公共/认证 4 个已实现、其余 **52** 个为 Skeleton：M01 6、M02 15、M03 6、M04 13、M05 5、M06 4、M07 3。接口族边界如下：
 
 | 接口族 | 典型接口 | 关键输入/输出 | 主要权限 |
 |---|---|---|---|
@@ -134,6 +146,8 @@ Docker Compose MySQL 8.4 :3306
 - 账号停用、权限撤销、经费作废保留历史，不删除业务记录。
 - schema 变化只通过 Alembic；当前 revision 为 `20260915_0001`。
 
+字段级类型、可空性、默认值、枚举域以及 `materials`、`detail_json`、`related_type` 的 JSON/取值约束见本次提交附件 `DESIGN_DATA_DICTIONARY_V0_1.md`，其中同时给出 ER 图；该附件与本节共同构成数据设计，不使用未提交的外部说明替代。
+
 ## 6. 关键流程与异常处理
 
 ### 6.1 社团注册审核
@@ -147,6 +161,8 @@ R01 填写草稿
 ```
 
 异常：缺少必填字段返回 40001；非本人编辑/撤回返回 40301；非 R03 审核返回 40301；重复审核返回 40901；事务任一写入失败全部回滚。
+
+跨模块时序：`POST /club-registration-applications/{id}/review` → M02 校验 PENDING → 同一事务写入 applications、clubs、M01 的 club_role_assignments → M06 创建通知 → 提交；任一写入失败则回滚，表中不留下 Club 或 R02 半成品。
 
 ### 6.2 年审与申请撤回
 
@@ -181,6 +197,19 @@ logout → 将 jti 写入 revoked_tokens → 后续受保护请求拒绝
 | 权限不足 | dependency/Club scope 检查 | 返回 401/403，不返回被保护数据 | 使用正确角色或资源 |
 | 事务中途失败 | Service 捕获异常/事务回滚 | 整体回滚并记录服务错误 | 修复输入或数据库后重试 |
 
+### 6.6 经费、通知与导出流程
+
+```text
+经费作废：R02 → POST /finance-records/{id}/void → M05 校验 Club scope/ACTIVE/原因
+        → finance_records.status=VOIDED + voided_by/reason → M07 追加审计 → 返回记录；不物理删除。
+通知生成：M02/M04 等业务 Service 完成事务内状态变更 → M06 创建 recipient 通知
+        → GET /notifications 查询 → POST /notifications/{id}/read 写入 READ/read_at；写通知失败则业务 Service 返回失败并回滚。
+报表导出：R02/R03 → GET /reports/export?format=csv → M07 校验 scope/过滤器
+        → 查询有效且授权范围内记录 → UTF-8 CSV 流；不支持格式返回 40001，越权返回 40302。
+```
+
+以上三条均对应 `docs/api/API_CONTRACT_V0_1.md` 的 Finance、Notifications、Reports 端点；V0.1 Skeleton 尚未实现的业务端点统一返回 50101，不能作为已运行流程的证据。
+
 ## 7. 界面与交互设计
 
 ### 7.1 页面结构
@@ -205,8 +234,8 @@ logout → 将 jti 写入 revoked_tokens → 后续受保护请求拒绝
 
 | 目标 | 设计应对 | 验证思路 |
 |---|---|---|
-| 性能 | 分页、索引、聚合查询；常用接口不返回无关字段 | 10 并发、P95 ≤2s；统计 P95 ≤5s |
-| 安全 | PBKDF2-SHA256、HS256 JWT、Bearer、账号状态检查、Club scope、统一错误 | 未登录/越权/停用账号测试；扫描提交文件中的 secret |
+| 性能 | 分页、索引、聚合查询；常用接口不返回无关字段 | 在 4 逻辑核/8GB RAM、本机 MySQL 8.4、100,000 条测试业务记录、httpx 0.28、10 并发×100 请求、预热 10 请求、两轮取 P95 条件下：login、`/auth/me`、活动/经费列表 P95 ≤2s；统计 P95 ≤5s。未执行时只能记 NOT RUN |
+| 安全 | PBKDF2-SHA256、HS256 JWT、Bearer、账号状态检查、Club scope、统一错误 | access token 固定 60 分钟过期；V0.1 不提供 refresh token，过期后重新登录；错误密码/不存在账号统一 40101，不透露存在性。登录限流/锁定尚未实现，部署前须以 `REQUIRES_CR/ENGINEERING_ISSUE` 决定策略 |
 | 可靠性 | Service 事务、状态机、外键和唯一约束、health、审计 | 注入重复/并发/DB 故障并检查回滚 |
 | 可维护性 | Router/Dependency/Service/Repository 分层，FR/AC/CR 编号追踪 | 代码结构检查、需求追溯检查 |
 | 兼容性 | Vue SPA + 标准 JSON/HTTP，支持 Chrome/Edge | 浏览器手工验收和前端 build |
@@ -249,6 +278,6 @@ logout → 将 jti 写入 revoked_tokens → 后续受保护请求拒绝
 
 ## 11. 需求追溯与提交材料
 
-需求基线沿用实验 1 的 `REQUIREMENTS_BASELINE_V1_1.md`，不在本文重新定义需求。完整映射见 `REQUIREMENTS_TRACEABILITY.md`；AI 协作和人工核实见 `AI_COLLABORATION_RECORD.md`、`MANUAL_VERIFICATION_NOTES.md`；V1→V1.1 的需求变更见 `CHANGE_REQUESTS_ROUND3.md`。
+需求基线沿用实验 1 的 `REQUIREMENTS_BASELINE_V1_1.md`，不在本文重新定义需求；为脱离外部文件仍可核对，本次提交的 `DESIGN_REQUIREMENTS_BASELINE.md` 已附 FR-01～FR-23 一行摘要与设计章节对照。完整端点契约见随包提交的 `docs/api/API_CONTRACT_V0_1.md`，字段级数据设计见 `DESIGN_DATA_DICTIONARY_V0_1.md`，完整附件列表见 `DESIGN_SUBMISSION_MANIFEST_V0_1.md`。V1→V1.1 的需求变更依据为 `CHANGE_REQUESTS_ROUND3.md`，后续一致性细化依据为 `CHANGE_REQUESTS_ROUND4.md`。
 
 设计阶段未新增或修改 R/M/FR。若后续实现发现必须改变需求含义，必须提交 CR，而不是直接修改本文或基线。
