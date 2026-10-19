@@ -8,7 +8,7 @@
 - 失败：`{"code":<error_code>,"message":"具体原因","data":null}`。
 - 分页：`page` 从 1 开始，`page_size` 为 1～100；响应 `data={items,page,page_size,total}`。
 - R02 是目标 `club_id` 的资源级授权，不是全局角色；R03 可按既有 FR 访问系统内全部社团业务记录；R04 不参与业务审核。
-- `PayloadRequest` 是 V0.1 占位 schema，成员实现时必须在不改变路径语义的前提下替换为领域 schema。
+- 领域请求字段、长度、枚举与附件白名单见随包提交的 `docs/api/SCHEMA_CATALOG_V0_1.md`；表中历史 `PayloadRequest` 标记一律按该目录对应领域 Schema 实现，不得自行猜测字段。
 - Skeleton 路由统一返回 HTTP 501 / code 50101；已实现路由见表中 `implemented`。
 
 主要响应 schema：`TokenData`、`CurrentUserData`、`PageData<T>`、`Resource`（对应领域资源）、`EmptyObject`。主要请求 schema：`LoginRequest`、`AccountCreateRequest`、`AccountUpdateRequest`、`RoleAssignmentRequest`、`ReviewRequest`、`ReasonRequest`、`ActivityCreateRequest`、`PayloadRequest`。
@@ -18,7 +18,7 @@
 | Method | Endpoint | FR | 角色/资源归属 | Request | Response data | 状态要求 | 主要错误 | 实现状态 |
 |---|---|---|---|---|---|---|---|---|
 | GET | `/health` | 工程基础 | 公开 | 无 | `{service,database}` | 无 | 50000 | implemented |
-| POST | `/auth/login` | FR-01 | 公开；账号须正常 | LoginRequest | TokenData | 正常账号 | 40001,40104 | implemented |
+| POST | `/auth/login` | FR-01 | 公开；账号须正常 | LoginRequest | TokenData | 正常账号 | 40001,40103,40104 | implemented |
 | POST | `/auth/logout` | FR-01 | 当前用户 | 无 | EmptyObject | JWT 有效 | 40101,40102 | implemented |
 | GET | `/auth/me` | FR-01, FR-02 | 当前用户 | 无 | CurrentUserData（系统角色与 R02 社团摘要） | JWT 有效且账号正常 | 40101～40103 | implemented |
 

@@ -50,6 +50,8 @@ Docker Compose MySQL 8.4 :3306
 
 课程环境使用 Docker Compose 提供 MySQL；Alembic 负责结构迁移，Seed 负责本地虚构测试数据。生产级反向代理、横向扩容和高可用不在本课程范围内。
 
+运行顺序：`docker compose up -d` 并等待 MySQL healthy → `alembic upgrade head`（失败即停止，不执行 Seed）→ `seed`（幂等；失败由事务回滚）→ 启动 FastAPI :8000 → 启动 Vite :5173。演示部署可由静态 Web server 托管前端并将 `/api/v1` 反向代理至 Uvicorn；课程 V0.1 为单进程，进程数 1，不声明生产 HA。
+
 ### 2.3 组件依赖与模块调用边界
 
 ```text
@@ -76,6 +78,15 @@ M02/M03/M04/M05/M06/M07 Service ──禁止── 直接访问其他模块 Repo
 
 公共组件由 Leader 维护：响应 Envelope、错误码、JWT、权限依赖、全局异常、数据库 Session、Alembic 和公共枚举。模块不得重复创建 User、JWT、权限或响应格式。
 
+| 模块 | Service 内部组件/关键对象 | 校验与状态机 | 事务边界 |
+|---|---|---|---|
+| M02 | RegistrationService、AnnualReviewService；申请、Club、年审 | ReviewStatus；R01/R02 提交者与 R03 审核者校验 | 注册通过时申请+Club+R02+通知；年审审核+通知 |
+| M03 | MembershipService；成员申请、成员关系 | JOIN/EXIT、PENDING→APPROVED/REJECTED/WITHDRAWN | 处理申请与成员关系变更同一事务 |
+| M04 | ActivityService、RegistrationService；审核与执行双状态 | ReviewStatus；UNPUBLISHED→REGISTRATION_OPEN→REGISTRATION_CLOSED→IN_PROGRESS→ENDED/CANCELLED | 报名占位、取消状态+通知、归档标记+审计 |
+| M05 | FinanceService；经费记录、作废原因 | ACTIVE→VOIDED；金额/Club/附件校验 | 作废记录+审计同一事务，不物理删除 |
+| M06 | NotificationService；通知、收件人、已读 | UNREAD→READ；收件人只能读本人 | 业务状态变更与必须通知同一事务；失败回滚 |
+| M07 | ReportService、AuditService；汇总、CSV、审计 | 过滤器/导出范围/审计只追加 | 查询只读；关键写操作调用追加审计 |
+
 ## 4. 接口设计
 
 ### 4.1 通用约定
@@ -86,7 +97,7 @@ M02/M03/M04/M05/M06/M07 Service ──禁止── 直接访问其他模块 Repo
 - 认证：除 health、login 外使用 `Authorization: Bearer <JWT>`。
 - 分页输入：`page` 从 1 开始，`page_size` 为 1～100；输出 `{items,page,page_size,total}`。
 - 资源 ID 使用正整数；日期时间使用 ISO 8601；金额使用两位小数且非负。
-- 主要错误：40001 输入无效、40101 无效/缺失 token、40104 账号不可用、40301 系统权限不足、40302 Club 权限不足、40401 资源不存在、40901 状态冲突、40902 唯一性冲突、50000 数据库/服务异常、50101 Skeleton 未实现。
+- 错误码唯一来源为随包提交的 `docs/api/ERROR_CODES.md`：40101 仅 JWT 无效/过期，40103 账号不存在或停用，40104 用户名/密码错误，50000 未预期服务错误，50001 数据库暂不可用。本文与流程不得重新定义其语义。
 
 ### 4.2 已实现公共接口
 
@@ -172,11 +183,17 @@ R02 只能撤回本人所属 Club 提交且处于 PENDING 的年审/活动申请
 
 ```text
 DRAFT → PENDING → APPROVED → UNPUBLISHED → REGISTRATION_OPEN
-                                  ├→ REGISTRATION_CLOSED → IN_PROGRESS → ENDED → ARCHIVED
+                                  ├→ REGISTRATION_CLOSED → IN_PROGRESS → ENDED --(R02 archive)--> archived_at 写入
                                   └→ CANCELLED
 ```
 
-审核状态和执行状态分列。R02 只能取消本 Club 活动，必须填写原因；取消后关闭报名并通知已报名用户；已结束活动不能取消。重复发布、非法状态转换、跨 Club 操作均返回对应错误，不写入部分结果。
+审核状态和执行状态分列。归档不是执行状态：R02 仅对 ENDED 活动写入 `archived_at` 与 `archived_by` 并追加审计；重复归档返回 40901。R02 只能取消本 Club 活动，必须填写原因；取消后关闭报名并通知已报名用户；已结束活动不能取消。重复发布/非法状态转换返回 40901，跨 Club 返回 40302，不写入部分结果。
+
+### 6.3a 成员申请与活动报名
+
+成员：R01 `POST /membership-applications`（JOIN/EXIT）→ M03 校验当前成员关系；重复/不满足关系返回 40902 → R02 `process`，PENDING→APPROVED/REJECTED，并在同一事务创建或结束 `club_members`。跨 Club 处理返回 40302。
+
+报名：R01 `POST /activities/{id}/registrations` → M04 在事务内锁定活动行（`SELECT ... FOR UPDATE`）→ 校验 `REGISTRATION_OPEN`、截止时间和容量 → 创建唯一 `(activity_id,user_id)` 报名并增加已占名额。满员/截止/重复返回 40901/40902；锁冲突重试一次后仍失败返回 40901。当前不提供候补队列。
 
 ### 6.4 登录与停用账号
 
@@ -191,7 +208,7 @@ logout → 将 jti 写入 revoked_tokens → 后续受保护请求拒绝
 
 | 故障 | 检测 | 处理 | 恢复 |
 |---|---|---|---|
-| MySQL 不可用 | health 查询失败/SQLAlchemy 异常 | 返回统一 50000 或降级 health，不泄露连接串 | 恢复 MySQL 后重试；不切换 SQLite |
+| MySQL 不可用 | health 查询失败/SQLAlchemy 异常 | 返回 50001 或降级 health，不泄露连接串 | 恢复 MySQL 后重试；不切换 SQLite |
 | 重复提交 | 唯一约束或状态检查 | 返回 40901/40902，保留原记录 | 用户修正输入或等待状态变化 |
 | 并发状态冲突 | 更新前重新读取当前状态 | 拒绝过期操作，返回 40901 | 重新加载后重试 |
 | 权限不足 | dependency/Club scope 检查 | 返回 401/403，不返回被保护数据 | 使用正确角色或资源 |
@@ -234,12 +251,16 @@ logout → 将 jti 写入 revoked_tokens → 后续受保护请求拒绝
 
 | 目标 | 设计应对 | 验证思路 |
 |---|---|---|
-| 性能 | 分页、索引、聚合查询；常用接口不返回无关字段 | 在 4 逻辑核/8GB RAM、本机 MySQL 8.4、100,000 条测试业务记录、httpx 0.28、10 并发×100 请求、预热 10 请求、两轮取 P95 条件下：login、`/auth/me`、活动/经费列表 P95 ≤2s；统计 P95 ≤5s。未执行时只能记 NOT RUN |
+| 性能 | 分页、索引、聚合查询；索引 `activities(club_id,review_status)`、`notifications(recipient_user_id,read_status)`、`finance_records(club_id,occurred_on)` | 在 4 逻辑核/8GB RAM、本机 MySQL 8.4、100,000 条测试业务记录（约 2,000 用户、200 社团、20,000 活动、50,000 报名、10,000 经费）、httpx 0.28、10 并发×100 请求、预热 10 请求、两轮取 P95 条件下：login、`/auth/me`、活动/经费列表 P95 ≤2s；统计 P95 ≤5s。未执行时只能记 NOT RUN |
 | 安全 | PBKDF2-SHA256、HS256 JWT、Bearer、账号状态检查、Club scope、统一错误 | access token 固定 60 分钟过期；V0.1 不提供 refresh token，过期后重新登录；错误密码/不存在账号统一 40101，不透露存在性。登录限流/锁定尚未实现，部署前须以 `REQUIRES_CR/ENGINEERING_ISSUE` 决定策略 |
 | 可靠性 | Service 事务、状态机、外键和唯一约束、health、审计 | 注入重复/并发/DB 故障并检查回滚 |
 | 可维护性 | Router/Dependency/Service/Repository 分层，FR/AC/CR 编号追踪 | 代码结构检查、需求追溯检查 |
 | 兼容性 | Vue SPA + 标准 JSON/HTTP，支持 Chrome/Edge | 浏览器手工验收和前端 build |
 | 可扩展性 | 模块按 M01～M07 隔离；外部 SSO/通知留接口边界而不提前实现 | 新增模块不修改公共授权和响应语义 |
+| 易用性 | 必填标识、字段级错误、角色导航、空态/加载/403 反馈 | R01 注册、R02 活动申报、R03 审核、R01 报名主路径均 ≤5 个视图步骤；错误提示可定位字段/操作原因 |
+| 数据完整性 | 外键、唯一约束、状态机、行锁报名、作废保留历史 | 迁移后检查索引/约束；并发报名与重复提交测试 |
+| 隐私 | 最小收集、字段脱敏、范围过滤、默认导出排除联系人 | 联系人仅申请人/对应 Club R02/R03 可见；默认 CSV 不导出；课程测试数据验收结束或测试库重置后 30 日内删除或不可逆匿名化 |
+| 可靠性恢复 | MySQL 备份与通知失败事务策略 | 课程环境 RPO 24h、RTO 4h 设计目标；通知为必须业务副作用，写入失败整体回滚，不使用未实现的异步重试 |
 
 ## 9. 设计决策与权衡
 
