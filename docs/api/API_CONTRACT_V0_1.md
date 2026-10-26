@@ -28,12 +28,12 @@ FR-02 是所有受保护 endpoint 的横切权限需求：后续实现必须同�
 
 | Method | Endpoint | FR | 角色/资源归属 | Request | Response data | 状态要求 | 主要错误 | 实现状态 |
 |---|---|---|---|---|---|---|---|---|
-| GET | `/accounts` | FR-23 | R04 | page,page_size | PageData<Account> | 无 | 40101,40301 | skeleton |
-| POST | `/accounts` | FR-23 | R04 | AccountCreateRequest | Account | 用户名唯一 | 40001,40301,40902 | skeleton |
-| PATCH | `/accounts/{account_id}` | FR-23 | R04 | AccountUpdateRequest | Account | 账号存在 | 40301,40401,40901 | skeleton |
-| POST | `/accounts/{account_id}/role-assignments` | FR-23 | R04；R02 必须带 club_id | RoleAssignmentRequest | RoleAssignment | 账号/社团存在 | 40002,40301,40401,40902 | skeleton |
-| DELETE | `/accounts/{account_id}/role-assignments/{role_code}` | FR-23 | R04；仅 R03/R04 系统授权 | 无 | EmptyObject | 授权有效 | 40301,40401,40901 | skeleton |
-| DELETE | `/accounts/{account_id}/club-role-assignments/{club_id}` | FR-23 | R04；目标社团 R02 授权 | 无 | EmptyObject | 授权有效 | 40301,40401,40901 | skeleton |
+| GET | `/accounts` | FR-23 | R04 | page,page_size | PageData<Account> | 无 | 40101,40301 | implemented; EI-03 validation pending |
+| POST | `/accounts` | FR-23 | R04 | AccountCreateRequest | Account | 用户名唯一 | 40001,40301,40902 | implemented; EI-03 validation pending |
+| PATCH | `/accounts/{account_id}` | FR-23 | R04 | AccountUpdateRequest | Account | 账号存在 | 40301,40401,40901 | implemented; EI-03 validation pending |
+| POST | `/accounts/{account_id}/role-assignments` | FR-23 | R04；R02 必须带 club_id | RoleAssignmentRequest | RoleAssignment | 账号/社团存在 | 40002,40301,40401,40902 | implemented; EI-03 validation pending |
+| DELETE | `/accounts/{account_id}/role-assignments/{role_code}` | FR-23 | R04；仅 R03/R04 系统授权 | 无 | EmptyObject | 授权有效 | 40301,40401,40901 | implemented; EI-03 validation pending |
+| DELETE | `/accounts/{account_id}/club-role-assignments/{club_id}` | FR-23 | R04；目标社团 R02 授权 | 无 | EmptyObject | 授权有效 | 40301,40401,40901 | implemented; EI-03 validation pending |
 
 账号停用或授权撤销不得删除历史业务数据；所有授权变更应产生审计记录。
 

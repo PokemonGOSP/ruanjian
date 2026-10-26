@@ -1,5 +1,6 @@
 import json
 from collections import defaultdict
+from typing import Literal
 
 from fastapi import APIRouter, Query
 from sqlalchemy import func, select
@@ -272,10 +273,75 @@ def grant_role(
 
 
 @router.delete("/{account_id}/role-assignments/{role_code}")
-def revoke_system_role(account_id: int, role_code: str, _: CurrentPrincipal):
-    todo("FR-23", "Leader/Integration")
+def revoke_system_role(
+    account_id: int,
+    role_code: Literal["R03", "R04"],
+    principal: CurrentPrincipal,
+    db: DbSession,
+) -> ApiResponse[dict]:
+    """Deactivate a system-level R03/R04 authorization without deleting its record."""
+    require_system_role(principal, "R04")
+    if db.get(User, account_id) is None:
+        raise AppError(40401, "账号不存在", 404)
+    assignment = db.scalar(
+        select(SystemRoleAssignment).where(
+            SystemRoleAssignment.user_id == account_id,
+            SystemRoleAssignment.role_code == role_code,
+        )
+    )
+    if assignment is None:
+        raise AppError(40401, "系统角色授权不存在", 404)
+    if not assignment.active:
+        raise AppError(40901, "系统角色授权已撤销", 409)
+
+    assignment.active = False
+    db.add(
+        AuditLog(
+            actor_user_id=principal.user_id,
+            action="SYSTEM_ROLE_REVOKED",
+            resource_type="SYSTEM_ROLE_ASSIGNMENT",
+            resource_id=str(account_id),
+            detail_json=json.dumps({"role_code": role_code}, ensure_ascii=False),
+        )
+    )
+    db.commit()
+    return ApiResponse(data={})
 
 
 @router.delete("/{account_id}/club-role-assignments/{club_id}")
-def revoke_club_role(account_id: int, club_id: int, _: CurrentPrincipal):
-    todo("FR-23", "Leader/Integration")
+def revoke_club_role(
+    account_id: int,
+    club_id: int,
+    principal: CurrentPrincipal,
+    db: DbSession,
+) -> ApiResponse[dict]:
+    """Deactivate one user--Club R02 authorization without deleting its record."""
+    require_system_role(principal, "R04")
+    if db.get(User, account_id) is None:
+        raise AppError(40401, "账号不存在", 404)
+    if db.get(Club, club_id) is None:
+        raise AppError(40401, "社团不存在", 404)
+    assignment = db.scalar(
+        select(ClubRoleAssignment).where(
+            ClubRoleAssignment.user_id == account_id,
+            ClubRoleAssignment.club_id == club_id,
+            ClubRoleAssignment.role_code == "R02",
+        )
+    )
+    if assignment is None:
+        raise AppError(40401, "社团 R02 授权不存在", 404)
+    if not assignment.active:
+        raise AppError(40901, "社团 R02 授权已撤销", 409)
+
+    assignment.active = False
+    db.add(
+        AuditLog(
+            actor_user_id=principal.user_id,
+            action="CLUB_ROLE_REVOKED",
+            resource_type="CLUB_ROLE_ASSIGNMENT",
+            resource_id=str(account_id),
+            detail_json=json.dumps({"club_id": club_id, "role_code": "R02"}, ensure_ascii=False),
+        )
+    )
+    db.commit()
+    return ApiResponse(data={})

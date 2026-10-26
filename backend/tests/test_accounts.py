@@ -117,6 +117,37 @@ class RoleGrantFakeDb:
         self.committed = True
 
 
+class RoleRevokeFakeDb:
+    def __init__(self, assignment) -> None:
+        self.user = User(
+            id=9,
+            username="target",
+            password_hash="must-not-be-returned",
+            display_name="目标用户",
+            status=AccountStatus.NORMAL,
+        )
+        self.club = Club(id=101, registration_application_id=1, name="测试社团", description="测试社团")
+        self.assignment = assignment
+        self.added = []
+        self.committed = False
+
+    def get(self, model, identity: int):
+        if model is User and identity == 9:
+            return self.user
+        if model is Club and identity == 101:
+            return self.club
+        return None
+
+    def scalar(self, _):
+        return self.assignment
+
+    def add(self, item):
+        self.added.append(item)
+
+    def commit(self):
+        self.committed = True
+
+
 @pytest.fixture(autouse=True)
 def clear_dependency_overrides():
     app.dependency_overrides.clear()
@@ -148,6 +179,15 @@ def update_fake_db(account: User | None):
 
 def role_grant_fake_db(existing_assignment=None):
     instance = RoleGrantFakeDb(existing_assignment=existing_assignment)
+
+    def dependency():
+        yield instance
+
+    return dependency, instance
+
+
+def role_revoke_fake_db(assignment):
+    instance = RoleRevokeFakeDb(assignment)
 
     def dependency():
         yield instance
@@ -347,3 +387,48 @@ def test_grant_role_rejects_an_existing_active_assignment():
 
     assert response.status_code == 409
     assert response.json()["code"] == 40902
+
+
+def test_r04_can_revoke_system_role_without_deleting_assignment():
+    assignment = SystemRoleAssignment(user_id=9, role_code="R03", active=True, granted_by=6)
+    dependency, fake_db_instance = role_revoke_fake_db(assignment)
+    app.dependency_overrides[get_db] = dependency
+    app.dependency_overrides[get_current_principal] = principal_with("R04")
+    client = TestClient(app)
+
+    response = client.delete("/api/v1/accounts/9/role-assignments/R03")
+
+    assert response.status_code == 200
+    assert response.json()["data"] == {}
+    assert assignment.active is False
+    assert fake_db_instance.committed is True
+    assert any(isinstance(item, AuditLog) and item.action == "SYSTEM_ROLE_REVOKED" for item in fake_db_instance.added)
+
+
+def test_r04_can_revoke_club_scoped_r02_without_deleting_assignment():
+    assignment = ClubRoleAssignment(user_id=9, club_id=101, role_code="R02", active=True, granted_by=6)
+    dependency, fake_db_instance = role_revoke_fake_db(assignment)
+    app.dependency_overrides[get_db] = dependency
+    app.dependency_overrides[get_current_principal] = principal_with("R04")
+    client = TestClient(app)
+
+    response = client.delete("/api/v1/accounts/9/club-role-assignments/101")
+
+    assert response.status_code == 200
+    assert response.json()["data"] == {}
+    assert assignment.active is False
+    assert fake_db_instance.committed is True
+    assert any(isinstance(item, AuditLog) and item.action == "CLUB_ROLE_REVOKED" for item in fake_db_instance.added)
+
+
+def test_revoke_system_role_rejects_r02_path_value():
+    assignment = SystemRoleAssignment(user_id=9, role_code="R03", active=True, granted_by=6)
+    dependency, _ = role_revoke_fake_db(assignment)
+    app.dependency_overrides[get_db] = dependency
+    app.dependency_overrides[get_current_principal] = principal_with("R04")
+    client = TestClient(app)
+
+    response = client.delete("/api/v1/accounts/9/role-assignments/R02")
+
+    assert response.status_code == 422
+    assert response.json()["code"] == 40001
