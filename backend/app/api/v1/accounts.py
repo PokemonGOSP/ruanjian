@@ -1,12 +1,16 @@
+import json
 from collections import defaultdict
 
 from fastapi import APIRouter, Query
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 
 from app.api.deps import CurrentPrincipal, DbSession
 from app.api.v1.skeleton import todo
+from app.core.exceptions import AppError
 from app.core.permissions import require_system_role
-from app.db.models.domain import ClubRoleAssignment, SystemRoleAssignment, User
+from app.core.security import hash_password
+from app.db.models.domain import AccountStatus, AuditLog, ClubRoleAssignment, SystemRoleAssignment, User
 from app.schemas.business import AccountCreateRequest, AccountData, AccountUpdateRequest, RoleAssignmentRequest
 from app.schemas.common import ApiResponse, PageData
 
@@ -72,8 +76,50 @@ def list_accounts(
 
 
 @router.post("")
-def create_account(_: CurrentPrincipal, body: AccountCreateRequest):
-    todo("FR-23", "Leader/Integration")
+def create_account(
+    principal: CurrentPrincipal,
+    body: AccountCreateRequest,
+    db: DbSession,
+) -> ApiResponse[AccountData]:
+    """Create a local test account with the non-revocable R01 base identity."""
+    require_system_role(principal, "R04")
+    if db.scalar(select(User.id).where(User.username == body.username)) is not None:
+        raise AppError(40902, "用户名已存在", 409)
+
+    account = User(
+        username=body.username,
+        password_hash=hash_password(body.password),
+        display_name=body.display_name,
+        status=AccountStatus.NORMAL,
+    )
+    db.add(account)
+    try:
+        db.flush()
+    except IntegrityError as exc:
+        db.rollback()
+        raise AppError(40902, "用户名已存在", 409) from exc
+
+    db.add(SystemRoleAssignment(user_id=account.id, role_code="R01", active=True, granted_by=principal.user_id))
+    db.add(
+        AuditLog(
+            actor_user_id=principal.user_id,
+            action="ACCOUNT_CREATED",
+            resource_type="USER",
+            resource_id=str(account.id),
+            detail_json=json.dumps({"username": account.username}, ensure_ascii=False),
+        )
+    )
+    db.commit()
+    return ApiResponse(
+        data=AccountData(
+            user_id=account.id,
+            username=account.username,
+            display_name=account.display_name,
+            status=account.status.value,
+            system_roles=["R01"],
+            club_authorizations=[],
+        )
+    )
 
 
 @router.patch("/{account_id}")
