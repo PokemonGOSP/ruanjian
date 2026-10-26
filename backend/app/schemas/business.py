@@ -34,6 +34,20 @@ class AccountUpdateRequest(BaseModel):
     status: Literal["NORMAL", "DISABLED"] | None = None
 
 
+class AccountClubAuthorization(BaseModel):
+    club_id: int
+    role_code: Literal["R02"] = "R02"
+
+
+class AccountData(BaseModel):
+    user_id: int
+    username: str
+    display_name: str
+    status: Literal["NORMAL", "DISABLED"]
+    system_roles: list[Literal["R01", "R03", "R04"]]
+    club_authorizations: list[AccountClubAuthorization]
+
+
 class ActivityCreateRequest(BaseModel):
     club_id: int
     title: str = Field(min_length=1, max_length=200)
