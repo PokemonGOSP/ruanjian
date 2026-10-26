@@ -123,8 +123,69 @@ def create_account(
 
 
 @router.patch("/{account_id}")
-def update_account(account_id: int, _: CurrentPrincipal, body: AccountUpdateRequest):
-    todo("FR-23", "Leader/Integration")
+def update_account(
+    account_id: int,
+    principal: CurrentPrincipal,
+    body: AccountUpdateRequest,
+    db: DbSession,
+) -> ApiResponse[AccountData]:
+    """Update local test-account profile/status without deleting historical data."""
+    require_system_role(principal, "R04")
+    account = db.get(User, account_id)
+    if account is None:
+        raise AppError(40401, "账号不存在", 404)
+
+    changes: dict[str, str] = {}
+    if body.display_name is not None and body.display_name != account.display_name:
+        account.display_name = body.display_name
+        changes["display_name"] = body.display_name
+    if body.status is not None:
+        requested_status = AccountStatus(body.status)
+        if requested_status != account.status:
+            account.status = requested_status
+            changes["status"] = requested_status.value
+    if not changes:
+        raise AppError(40901, "账号资料或状态未发生变化", 409)
+
+    db.add(
+        AuditLog(
+            actor_user_id=principal.user_id,
+            action="ACCOUNT_UPDATED",
+            resource_type="USER",
+            resource_id=str(account.id),
+            detail_json=json.dumps(changes, ensure_ascii=False),
+        )
+    )
+    db.commit()
+
+    system_roles = sorted(
+        db.scalars(
+            select(SystemRoleAssignment.role_code).where(
+                SystemRoleAssignment.user_id == account.id,
+                SystemRoleAssignment.active.is_(True),
+            )
+        ).all()
+    )
+    club_authorizations = [
+        {"club_id": club_id, "role_code": "R02"}
+        for club_id in db.scalars(
+            select(ClubRoleAssignment.club_id).where(
+                ClubRoleAssignment.user_id == account.id,
+                ClubRoleAssignment.role_code == "R02",
+                ClubRoleAssignment.active.is_(True),
+            )
+        ).all()
+    ]
+    return ApiResponse(
+        data=AccountData(
+            user_id=account.id,
+            username=account.username,
+            display_name=account.display_name,
+            status=account.status.value,
+            system_roles=system_roles,
+            club_authorizations=club_authorizations,
+        )
+    )
 
 
 @router.post("/{account_id}/role-assignments")

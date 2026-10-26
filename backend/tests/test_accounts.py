@@ -63,6 +63,29 @@ class CreateFakeDb:
         self.committed = True
 
 
+class UpdateFakeDb:
+    def __init__(self, account: User | None) -> None:
+        self.account = account
+        self.added = []
+        self.committed = False
+        self.scalars_call_count = 0
+
+    def get(self, _, account_id: int):
+        return self.account if self.account is not None and self.account.id == account_id else None
+
+    def scalars(self, _):
+        self.scalars_call_count += 1
+        if self.scalars_call_count == 1:
+            return SimpleNamespace(all=lambda: ["R01"])
+        return SimpleNamespace(all=lambda: [])
+
+    def add(self, item):
+        self.added.append(item)
+
+    def commit(self):
+        self.committed = True
+
+
 @pytest.fixture(autouse=True)
 def clear_dependency_overrides():
     app.dependency_overrides.clear()
@@ -76,6 +99,15 @@ def fake_db():
 
 def create_fake_db(existing_username: bool = False):
     instance = CreateFakeDb(existing_username=existing_username)
+
+    def dependency():
+        yield instance
+
+    return dependency, instance
+
+
+def update_fake_db(account: User | None):
+    instance = UpdateFakeDb(account)
 
     def dependency():
         yield instance
@@ -171,3 +203,55 @@ def test_create_account_rejects_duplicate_username():
 
     assert response.status_code == 409
     assert response.json()["code"] == 40902
+
+
+def test_r04_can_disable_account_and_get_audited_result():
+    account = User(
+        id=2,
+        username="student02",
+        password_hash="must-not-be-returned",
+        display_name="学生二",
+        status=AccountStatus.NORMAL,
+    )
+    dependency, fake_db_instance = update_fake_db(account)
+    app.dependency_overrides[get_db] = dependency
+    app.dependency_overrides[get_current_principal] = principal_with("R04")
+    client = TestClient(app)
+
+    response = client.patch("/api/v1/accounts/2", json={"status": "DISABLED"})
+
+    assert response.status_code == 200
+    assert response.json()["data"]["status"] == "DISABLED"
+    assert fake_db_instance.committed is True
+    assert any(isinstance(item, AuditLog) and item.action == "ACCOUNT_UPDATED" for item in fake_db_instance.added)
+
+
+def test_update_account_returns_404_for_missing_account():
+    dependency, _ = update_fake_db(None)
+    app.dependency_overrides[get_db] = dependency
+    app.dependency_overrides[get_current_principal] = principal_with("R04")
+    client = TestClient(app)
+
+    response = client.patch("/api/v1/accounts/999", json={"status": "DISABLED"})
+
+    assert response.status_code == 404
+    assert response.json()["code"] == 40401
+
+
+def test_update_account_rejects_no_effect_change():
+    account = User(
+        id=2,
+        username="student02",
+        password_hash="must-not-be-returned",
+        display_name="学生二",
+        status=AccountStatus.NORMAL,
+    )
+    dependency, _ = update_fake_db(account)
+    app.dependency_overrides[get_db] = dependency
+    app.dependency_overrides[get_current_principal] = principal_with("R04")
+    client = TestClient(app)
+
+    response = client.patch("/api/v1/accounts/2", json={"status": "NORMAL"})
+
+    assert response.status_code == 409
+    assert response.json()["code"] == 40901
