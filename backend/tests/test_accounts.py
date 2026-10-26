@@ -5,7 +5,7 @@ from fastapi.testclient import TestClient
 
 from app.api.deps import get_current_principal
 from app.core.permissions import Principal
-from app.db.models.domain import AccountStatus, User
+from app.db.models.domain import AccountStatus, AuditLog, SystemRoleAssignment, User
 from app.db.session import get_db
 from app.main import app
 
@@ -43,6 +43,26 @@ class FakeDb:
         return SimpleNamespace(all=lambda: [(6, 101)])
 
 
+class CreateFakeDb:
+    def __init__(self, existing_username: bool = False) -> None:
+        self.existing_username = existing_username
+        self.added = []
+        self.committed = False
+
+    def scalar(self, _):
+        return 1 if self.existing_username else None
+
+    def add(self, item):
+        self.added.append(item)
+
+    def flush(self):
+        user = next(item for item in self.added if isinstance(item, User))
+        user.id = 9
+
+    def commit(self):
+        self.committed = True
+
+
 @pytest.fixture(autouse=True)
 def clear_dependency_overrides():
     app.dependency_overrides.clear()
@@ -52,6 +72,15 @@ def clear_dependency_overrides():
 
 def fake_db():
     yield FakeDb()
+
+
+def create_fake_db(existing_username: bool = False):
+    instance = CreateFakeDb(existing_username=existing_username)
+
+    def dependency():
+        yield instance
+
+    return dependency, instance
 
 
 def principal_with(*roles: str):
@@ -102,3 +131,43 @@ def test_account_list_rejects_invalid_page_size():
 
     assert response.status_code == 422
     assert response.json()["code"] == 40001
+
+
+def test_r04_can_create_local_account_with_r01_and_audit_record():
+    dependency, fake_db_instance = create_fake_db()
+    app.dependency_overrides[get_db] = dependency
+    app.dependency_overrides[get_current_principal] = principal_with("R04")
+    client = TestClient(app)
+
+    response = client.post(
+        "/api/v1/accounts",
+        json={"username": "newstudent", "display_name": "新同学", "password": "NewStudent123!"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["data"]["system_roles"] == ["R01"]
+    assert fake_db_instance.committed is True
+    assert any(isinstance(item, User) and item.password_hash != "NewStudent123!" for item in fake_db_instance.added)
+    assert any(
+        isinstance(item, SystemRoleAssignment) and item.role_code == "R01" and item.user_id == 9
+        for item in fake_db_instance.added
+    )
+    assert any(
+        isinstance(item, AuditLog) and item.action == "ACCOUNT_CREATED" and "NewStudent123!" not in item.detail_json
+        for item in fake_db_instance.added
+    )
+
+
+def test_create_account_rejects_duplicate_username():
+    dependency, _ = create_fake_db(existing_username=True)
+    app.dependency_overrides[get_db] = dependency
+    app.dependency_overrides[get_current_principal] = principal_with("R04")
+    client = TestClient(app)
+
+    response = client.post(
+        "/api/v1/accounts",
+        json={"username": "student01", "display_name": "重复账号", "password": "NewStudent123!"},
+    )
+
+    assert response.status_code == 409
+    assert response.json()["code"] == 40902
