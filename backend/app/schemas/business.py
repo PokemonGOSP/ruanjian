@@ -48,6 +48,13 @@ class AccountData(BaseModel):
     club_authorizations: list[AccountClubAuthorization]
 
 
+class RoleAssignmentData(BaseModel):
+    user_id: int
+    role_code: Literal["R02", "R03", "R04"]
+    club_id: int | None = None
+    active: bool
+
+
 class ActivityCreateRequest(BaseModel):
     club_id: int
     title: str = Field(min_length=1, max_length=200)

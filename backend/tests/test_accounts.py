@@ -5,7 +5,7 @@ from fastapi.testclient import TestClient
 
 from app.api.deps import get_current_principal
 from app.core.permissions import Principal
-from app.db.models.domain import AccountStatus, AuditLog, SystemRoleAssignment, User
+from app.db.models.domain import AccountStatus, AuditLog, Club, ClubRoleAssignment, SystemRoleAssignment, User
 from app.db.session import get_db
 from app.main import app
 
@@ -86,6 +86,37 @@ class UpdateFakeDb:
         self.committed = True
 
 
+class RoleGrantFakeDb:
+    def __init__(self, existing_assignment=None) -> None:
+        self.user = User(
+            id=9,
+            username="target",
+            password_hash="must-not-be-returned",
+            display_name="目标用户",
+            status=AccountStatus.NORMAL,
+        )
+        self.club = Club(id=101, registration_application_id=1, name="测试社团", description="测试社团")
+        self.existing_assignment = existing_assignment
+        self.added = []
+        self.committed = False
+
+    def get(self, model, identity: int):
+        if model is User and identity == 9:
+            return self.user
+        if model is Club and identity == 101:
+            return self.club
+        return None
+
+    def scalar(self, _):
+        return self.existing_assignment
+
+    def add(self, item):
+        self.added.append(item)
+
+    def commit(self):
+        self.committed = True
+
+
 @pytest.fixture(autouse=True)
 def clear_dependency_overrides():
     app.dependency_overrides.clear()
@@ -108,6 +139,15 @@ def create_fake_db(existing_username: bool = False):
 
 def update_fake_db(account: User | None):
     instance = UpdateFakeDb(account)
+
+    def dependency():
+        yield instance
+
+    return dependency, instance
+
+
+def role_grant_fake_db(existing_assignment=None):
+    instance = RoleGrantFakeDb(existing_assignment=existing_assignment)
 
     def dependency():
         yield instance
@@ -255,3 +295,55 @@ def test_update_account_rejects_no_effect_change():
 
     assert response.status_code == 409
     assert response.json()["code"] == 40901
+
+
+def test_r04_can_grant_r02_only_for_a_specific_existing_club():
+    dependency, fake_db_instance = role_grant_fake_db()
+    app.dependency_overrides[get_db] = dependency
+    app.dependency_overrides[get_current_principal] = principal_with("R04")
+    client = TestClient(app)
+
+    response = client.post("/api/v1/accounts/9/role-assignments", json={"role_code": "R02", "club_id": 101})
+
+    assert response.status_code == 200
+    assert response.json()["data"] == {"user_id": 9, "role_code": "R02", "club_id": 101, "active": True}
+    assert fake_db_instance.committed is True
+    assert any(isinstance(item, ClubRoleAssignment) and item.club_id == 101 for item in fake_db_instance.added)
+    assert any(isinstance(item, AuditLog) and item.action == "ROLE_GRANTED" for item in fake_db_instance.added)
+
+
+def test_grant_r02_requires_a_club_id():
+    dependency, _ = role_grant_fake_db()
+    app.dependency_overrides[get_db] = dependency
+    app.dependency_overrides[get_current_principal] = principal_with("R04")
+    client = TestClient(app)
+
+    response = client.post("/api/v1/accounts/9/role-assignments", json={"role_code": "R02"})
+
+    assert response.status_code == 400
+    assert response.json()["code"] == 40002
+
+
+def test_grant_system_role_rejects_club_scope():
+    dependency, _ = role_grant_fake_db()
+    app.dependency_overrides[get_db] = dependency
+    app.dependency_overrides[get_current_principal] = principal_with("R04")
+    client = TestClient(app)
+
+    response = client.post("/api/v1/accounts/9/role-assignments", json={"role_code": "R03", "club_id": 101})
+
+    assert response.status_code == 400
+    assert response.json()["code"] == 40002
+
+
+def test_grant_role_rejects_an_existing_active_assignment():
+    existing = ClubRoleAssignment(user_id=9, club_id=101, role_code="R02", active=True, granted_by=6)
+    dependency, _ = role_grant_fake_db(existing_assignment=existing)
+    app.dependency_overrides[get_db] = dependency
+    app.dependency_overrides[get_current_principal] = principal_with("R04")
+    client = TestClient(app)
+
+    response = client.post("/api/v1/accounts/9/role-assignments", json={"role_code": "R02", "club_id": 101})
+
+    assert response.status_code == 409
+    assert response.json()["code"] == 40902

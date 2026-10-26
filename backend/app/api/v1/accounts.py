@@ -10,8 +10,14 @@ from app.api.v1.skeleton import todo
 from app.core.exceptions import AppError
 from app.core.permissions import require_system_role
 from app.core.security import hash_password
-from app.db.models.domain import AccountStatus, AuditLog, ClubRoleAssignment, SystemRoleAssignment, User
-from app.schemas.business import AccountCreateRequest, AccountData, AccountUpdateRequest, RoleAssignmentRequest
+from app.db.models.domain import AccountStatus, AuditLog, Club, ClubRoleAssignment, SystemRoleAssignment, User
+from app.schemas.business import (
+    AccountCreateRequest,
+    AccountData,
+    AccountUpdateRequest,
+    RoleAssignmentData,
+    RoleAssignmentRequest,
+)
 from app.schemas.common import ApiResponse, PageData
 
 router = APIRouter(prefix="/accounts", tags=["accounts"])
@@ -189,8 +195,80 @@ def update_account(
 
 
 @router.post("/{account_id}/role-assignments")
-def grant_role(account_id: int, _: CurrentPrincipal, body: RoleAssignmentRequest):
-    todo("FR-23", "Leader/Integration")
+def grant_role(
+    account_id: int,
+    body: RoleAssignmentRequest,
+    principal: CurrentPrincipal,
+    db: DbSession,
+) -> ApiResponse[RoleAssignmentData]:
+    """Grant a resource-scoped R02 or a system-scoped R03/R04 authorization."""
+    require_system_role(principal, "R04")
+    account = db.get(User, account_id)
+    if account is None:
+        raise AppError(40401, "账号不存在", 404)
+
+    if body.role_code == "R02":
+        if body.club_id is None:
+            raise AppError(40002, "授予 R02 必须指定社团", 400)
+        if db.get(Club, body.club_id) is None:
+            raise AppError(40401, "社团不存在", 404)
+        assignment = db.scalar(
+            select(ClubRoleAssignment).where(
+                ClubRoleAssignment.user_id == account_id,
+                ClubRoleAssignment.club_id == body.club_id,
+                ClubRoleAssignment.role_code == "R02",
+            )
+        )
+        if assignment is not None and assignment.active:
+            raise AppError(40902, "该社团 R02 授权已存在", 409)
+        if assignment is None:
+            assignment = ClubRoleAssignment(
+                user_id=account_id,
+                club_id=body.club_id,
+                role_code="R02",
+                active=True,
+                granted_by=principal.user_id,
+            )
+            db.add(assignment)
+        else:
+            assignment.active = True
+            assignment.granted_by = principal.user_id
+        granted_data = RoleAssignmentData(user_id=account_id, role_code="R02", club_id=body.club_id, active=True)
+    else:
+        if body.club_id is not None:
+            raise AppError(40002, "R03 或 R04 不得指定社团", 400)
+        assignment = db.scalar(
+            select(SystemRoleAssignment).where(
+                SystemRoleAssignment.user_id == account_id,
+                SystemRoleAssignment.role_code == body.role_code,
+            )
+        )
+        if assignment is not None and assignment.active:
+            raise AppError(40902, "系统角色授权已存在", 409)
+        if assignment is None:
+            assignment = SystemRoleAssignment(
+                user_id=account_id,
+                role_code=body.role_code,
+                active=True,
+                granted_by=principal.user_id,
+            )
+            db.add(assignment)
+        else:
+            assignment.active = True
+            assignment.granted_by = principal.user_id
+        granted_data = RoleAssignmentData(user_id=account_id, role_code=body.role_code, active=True)
+
+    db.add(
+        AuditLog(
+            actor_user_id=principal.user_id,
+            action="ROLE_GRANTED",
+            resource_type="ROLE_ASSIGNMENT",
+            resource_id=str(account_id),
+            detail_json=json.dumps(granted_data.model_dump(), ensure_ascii=False),
+        )
+    )
+    db.commit()
+    return ApiResponse(data=granted_data)
 
 
 @router.delete("/{account_id}/role-assignments/{role_code}")
