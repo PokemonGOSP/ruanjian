@@ -1,6 +1,7 @@
 from typing import Any
 
 from fastapi import FastAPI, Request
+from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import SQLAlchemyError
@@ -15,8 +16,16 @@ class AppError(Exception):
         super().__init__(message)
 
 
+def _safe_validation_errors(errors: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Drop non-serializable ctx objects (e.g. ValueError) while keeping loc/msg/input/type."""
+    return [{key: value for key, value in error.items() if key != "ctx"} for error in errors]
+
+
 def error_response(status_code: int, code: int, message: str, data: Any = None) -> JSONResponse:
-    return JSONResponse(status_code=status_code, content={"code": code, "message": message, "data": data})
+    return JSONResponse(
+        status_code=status_code,
+        content=jsonable_encoder({"code": code, "message": message, "data": data}),
+    )
 
 
 def install_exception_handlers(app: FastAPI) -> None:
@@ -26,7 +35,7 @@ def install_exception_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(RequestValidationError)
     async def handle_validation(_: Request, exc: RequestValidationError) -> JSONResponse:
-        return error_response(422, 40001, "请求参数校验失败", exc.errors())
+        return error_response(422, 40001, "请求参数校验失败", _safe_validation_errors(exc.errors()))
 
     @app.exception_handler(SQLAlchemyError)
     async def handle_database_error(_: Request, __: SQLAlchemyError) -> JSONResponse:

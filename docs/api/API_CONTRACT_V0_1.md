@@ -11,7 +11,7 @@
 - `PayloadRequest` 是 V0.1 占位 schema，成员实现时必须在不改变路径语义的前提下替换为领域 schema。
 - Skeleton 路由统一返回 HTTP 501 / code 50101；已实现路由见表中 `implemented`。
 
-主要响应 schema：`TokenData`、`CurrentUserData`、`PageData<T>`、`Resource`（对应领域资源）、`EmptyObject`。主要请求 schema：`LoginRequest`、`AccountCreateRequest`、`AccountUpdateRequest`、`RoleAssignmentRequest`、`ReviewRequest`、`ReasonRequest`、`ActivityCreateRequest`、`PayloadRequest`。
+主要响应 schema：`TokenData`、`CurrentUserData`、`PageData<T>`、`Resource`（对应领域资源）、`EmptyObject`。主要请求 schema：`LoginRequest`、`AccountCreateRequest`、`AccountUpdateRequest`、`RoleAssignmentRequest`、`ReviewRequest`、`ReasonRequest`、`ActivityCreateRequest`、`FinanceRecordCreateRequest`、`FinanceRecordUpdateRequest`、`ManagementNotificationRequest`。
 
 ## 2. Health 与认证
 
@@ -101,32 +101,61 @@ FR-02 是所有受保护 endpoint 的横切权限需求：后续实现必须同�
 
 | Method | Endpoint | FR | 角色/资源归属 | Request | Response data | 状态要求 | 主要错误 | 实现状态 |
 |---|---|---|---|---|---|---|---|---|
-| GET | `/finance-records/summary` | FR-18 | 目标社团 R02 或 R03 全部 | club_id/filter | FinanceSummary | 无 | 40302 | skeleton |
-| POST | `/finance-records` | FR-17 | 目标社团 R02 | PayloadRequest | FinanceRecord | 金额/类型有效 | 40001,40302 | skeleton |
-| GET | `/finance-records` | FR-18 | 目标社团 R02 或 R03 全部 | filters,page,page_size | PageData<FinanceRecord> | 无 | 40302 | skeleton |
-| PATCH | `/finance-records/{record_id}` | FR-17 | 目标社团 R02 | PayloadRequest | FinanceRecord | 有效记录 | 40302,40901 | skeleton |
-| POST | `/finance-records/{record_id}/void` | FR-17 | 目标社团 R02 | ReasonRequest | FinanceRecord | 有效 → 已作废 | 40302,40901 | skeleton |
+| GET | `/finance-records/summary` | FR-18 | 目标社团 R02 或 R03 全部 | club_id,date_from,date_to | FinanceSummary | 无 | 40301,40302 | implemented |
+| POST | `/finance-records` | FR-17 | 目标社团 R02 | FinanceRecordCreateRequest | FinanceRecord | 金额/类型有效 | 40001,40302 | implemented |
+| GET | `/finance-records` | FR-18 | 目标社团 R02 或 R03 全部 | filters,page,page_size | PageData<FinanceRecord> | 无 | 40301,40302 | implemented |
+| PATCH | `/finance-records/{record_id}` | FR-17 | 目标社团 R02 | FinanceRecordUpdateRequest | FinanceRecord | 有效记录 | 40302,40901 | implemented |
+| POST | `/finance-records/{record_id}/void` | FR-17 | 目标社团 R02 | ReasonRequest | FinanceRecord | 有效 → 已作废 | 40302,40901 | implemented |
 
 经费只记录、查询、汇总、统计和作废；无审批、报销、支付或财务结算。
+
+### 8.1 M05 领域请求与过滤（implemented）
+
+- 创建：`club_id`、`activity_id?`、`record_type`（`INCOME`/`EXPENSE`）、`amount`（> 0，最多 12 位、2 位小数）、`occurred_on`、`description`（1～500）、`voucher_reference?`（≤255）。
+- 修改：仅可修改 `activity_id?`、`record_type?`、`amount?`、`occurred_on?`、`description?`、`voucher_reference?`；仅 `ACTIVE` 记录可改，不能改 `club_id` 或 `status`。`record_type`、`amount`、`occurred_on`、`description` 显式传 `null` 返回 `40002`。
+- 列表过滤：`club_id`、`activity_id`、`record_type`、`status`（`ACTIVE`/`VOIDED`）、`date_from`、`date_to`（按 `occurred_on`，含首尾日期）、`page`、`page_size`。
+- 范围：R02 未指定 `club_id` 时使用其全部有效社团；指定时必须为本人负责社团；R03 未指定时使用全部社团。
+- 汇总过滤：`club_id`、`date_from`、`date_to`；仅 `ACTIVE` 记录计入收入/支出/结余，另返回有效记录数与已作废数。
+- `FinanceRecord` 返回 `club_name`、`activity_title`、`created_by_name`、`voided_by_name` 等展示字段；`amount` 以十进制字符串返回，便于保持精度。
+- 关联 `activity_id` 必须属于同一 `club_id`，否则 `40002`。
 
 ## 9. Notifications（M06）
 
 | Method | Endpoint | FR | 角色/资源归属 | Request | Response data | 状态要求 | 主要错误 | 实现状态 |
 |---|---|---|---|---|---|---|---|---|
-| GET | `/notifications` | FR-19 | 当前用户本人 | page,page_size | PageData<Notification> | 无 | 40101 | skeleton |
-| POST | `/notifications/{notification_id}/read` | FR-19 | 收件人本人 | 无 | Notification | 未读 → 已读 | 40301,40401 | skeleton |
-| POST | `/notifications/read-all` | FR-19 | 当前用户本人 | 无 | EmptyObject | 无 | 40101 | skeleton |
-| POST | `/notifications/management` | FR-20 | R03 | PayloadRequest | NotificationBatchResult | 目标范围有效 | 40001,40301 | skeleton |
+| GET | `/notifications` | FR-19 | 当前用户本人 | page,page_size,read_status | PageData<Notification> | 无 | 40101 | implemented |
+| POST | `/notifications/{notification_id}/read` | FR-19 | 收件人本人 | 无 | Notification | 未读 → 已读 | 40301,40401 | implemented |
+| POST | `/notifications/read-all` | FR-19 | 当前用户本人 | 无 | EmptyObject | 无 | 40101 | implemented |
+| POST | `/notifications/management` | FR-20 | R03 | ManagementNotificationRequest | NotificationBatchResult | 目标范围有效 | 40001,40301 | implemented |
 
 当前只提供站内通知，不定义邮件、短信或外部消息接口。
+
+### 9.1 M06 领域请求与目标范围（implemented）
+
+- 列表仅返回 `recipient_user_id` 等于当前用户的记录，支持 `read_status`（`UNREAD`/`READ`）过滤，按创建时间倒序。
+- 标记已读仅允许收件人本人；重复标记同一通知保持成功且不改变业务含义。
+- 管理通知 `target_type`：
+  - `USERS`：`user_ids` 非空，其余目标列表必须为空；
+  - `ROLES`：`role_codes` 非空（`R01`/`R02`/`R03`/`R04`），其余目标列表必须为空；`R02` 解析为全部有效社团负责人授权；
+  - `CLUBS`：`club_ids` 非空，接收人为目标社团有效成员与该社团有效 R02 负责人，去重后发送。
+- 返回 `{created_count,recipient_count,target_type}`；目标不存在或无接收人返回 `40002`。
+- FR-19 业务事件通过 `app.services.notification_service.notify` / `notify_many` 写入，供成员 A/B 在审核、报名、取消等流程复用；不新增外部通知渠道。
 
 ## 10. Reports and audit（M07）
 
 | Method | Endpoint | FR | 角色/资源归属 | Request | Response data | 状态要求 | 主要错误 | 实现状态 |
 |---|---|---|---|---|---|---|---|---|
-| GET | `/reports/summary` | FR-21 | R02 本社团或 R03 全部 | filters | ReportSummary | 无 | 40301,40302 | skeleton |
-| GET | `/reports/export` | FR-21 | R02 本社团或 R03 全部 | format=csv,filters | 文件流 | 无 | 40001,40301,40302 | skeleton |
-| GET | `/audit-logs` | FR-22 | R04 | page,page_size,filters | PageData<AuditLog> | 无 | 40301 | skeleton |
+| GET | `/reports/summary` | FR-21 | R02 本社团或 R03 全部 | filters | ReportSummary | 无 | 40301,40302 | implemented |
+| GET | `/reports/export` | FR-21 | R02 本社团或 R03 全部 | format=csv,filters | 文件流 | 无 | 40001,40301,40302 | implemented |
+| GET | `/audit-logs` | FR-22 | R04 | page,page_size,filters | PageData<AuditLog> | 无 | 40301 | implemented |
+
+### 10.1 M07 统计与导出（implemented）
+
+- `/reports/summary` 支持 `club_id`、`date_from`、`date_to`，返回社团数、有效成员数、活动数、有效报名数、活动审核/执行状态分布，以及经费收入、支出、结余和作废记录数。R02 未指定 `club_id` 时聚合其全部有效社团；R03 未指定时聚合全部社团。
+- 日期口径：活动按 `starts_at`、经费按 `occurred_on`、报名按所属活动开始时间；成员数为当前 `ACTIVE` 成员，不受日期过滤影响。
+- `/reports/export` 仅支持 `format=csv`，其他格式返回 `40001`。导出内容为经费明细并附带汇总头；使用 UTF-8 BOM、CRLF 和公式注入防护，便于 Excel 打开。权限与经费列表一致。
+- `/audit-logs` 仅 R04 可访问，支持 `actor_user_id`、`action`、`resource_type`、`date_from`、`date_to`、`page`、`page_size`；`detail` 返回解析后的 JSON 或原始文本。
+- 审计写入统一使用 `app.services.audit_service.record_audit`；成员 C 已为经费创建/修改/作废和管理通知发布写入审计，成员 A/B/负责人可在审核、授权等关键操作中复用。
 
 ## 11. 契约变更规则
 
