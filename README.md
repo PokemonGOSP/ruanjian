@@ -1,6 +1,6 @@
 # 高校社团活动管理系统 — Engineering Skeleton V0.1
 
-基于 `REQUIREMENTS_BASELINE_V1_1.md` 的课程工程骨架。当前只完整跑通本地测试账号登录、JWT、`/auth/me` 和前端认证状态；M02～M07 只提供 Schema、API Contract、路由和页面占位。
+基于 `REQUIREMENTS_BASELINE_V1_1.md` 的课程工程骨架。已跑通本地测试账号登录、JWT、`/auth/me`，并实现成员 C 负责的 M05 经费、M06 通知、M07 统计与审计；M02～M04 和 FR-23 仍提供 Schema、API Contract、路由和页面占位。
 
 ## 技术栈
 
@@ -138,13 +138,19 @@ npm.cmd run build
 
 已实现：health、login、logout、me、统一异常/响应、JWT/PBKDF2、SQLAlchemy 模型、Alembic、Seed、前端登录与 Dashboard 认证状态。
 
-Skeleton（HTTP 501）：FR-03～FR-23 的 M02～M07 业务，以及 FR-23 账号授权管理。路由契约见 `docs/api/API_CONTRACT_V0_1.md`。
+成员 C（M05/M06/M07）已实现：
+- 经费记录登记、修改、作废、查询与汇总（FR-17、FR-18）；
+- 站内通知列表、已读、全部已读和管理通知发布（FR-19、FR-20）；
+- 综合统计、经费 CSV 导出和 R04 审计日志查询（FR-21、FR-22）；
+- 对应前端页面与 API 封装；FR-19 通知写入 service 可供成员 A/B 调用。
+
+Skeleton（HTTP 501）：FR-03～FR-16 的 M02～M04 业务，以及 FR-23 账号授权管理。路由契约见 `docs/api/API_CONTRACT_V0_1.md`。
 
 ## 当前 TODO
 
 - TODO(Member A)：M02/M03 Service、Repository、领域 Schema、测试和 UI。
 - TODO(Member B)：M04 Service、状态转换、报名/取消通知、测试和 UI。
-- TODO(Member C)：M05/M06/M07 查询、通知、报表/审计、测试和 UI。
-- TODO(Leader/Integration)：实现 FR-23，审查公共契约变更，持续集成。
+- TODO(Leader/Integration)：实现 FR-23，审查公共契约变更，持续集成；在具备 MySQL 的环境执行成员 C 的真实集成验证（见 `docs/development/M05_M06_M07_IMPLEMENTATION.md`）。
+- 成员 C 已完成 M05/M06/M07 的后端、前端、测试和文档，剩余项为真实 MySQL 集成验证。
 
 环境实测结果见 `ENGINEERING_VALIDATION_V0_1.md`；环境或需求问题见 `ENGINEERING_ISSUES_V0_1.md`。
