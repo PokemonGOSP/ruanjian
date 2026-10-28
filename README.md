@@ -1,6 +1,6 @@
 # 高校社团活动管理系统 — Engineering Skeleton V0.1
 
-基于 `REQUIREMENTS_BASELINE_V1_1.md` 的课程工程骨架。当前只完整跑通本地测试账号登录、JWT、`/auth/me` 和前端认证状态；M02～M07 只提供 Schema、API Contract、路由和页面占位。
+基于 `REQUIREMENTS_BASELINE_V1_1.md` 的课程工程。当前已完整跑通本地测试账号登录、JWT、`/auth/me`、前端认证状态，以及 M04 活动管理（FR-11～FR-16：申报、审核、发布、报名、取消/归档）；M02、M03、M05～M07 只提供 Schema、API Contract、路由和页面占位。
 
 ## 技术栈
 
@@ -136,14 +136,15 @@ npm.cmd run build
 
 ## 当前实现范围
 
-已实现：health、login、logout、me、统一异常/响应、JWT/PBKDF2、SQLAlchemy 模型、Alembic、Seed、前端登录与 Dashboard 认证状态。
+已实现：health、login、logout、me、统一异常/响应、JWT/PBKDF2、SQLAlchemy 模型、Alembic、Seed、前端登录与 Dashboard 认证状态；M04 活动管理（FR-11～FR-16）的 Service/状态转换、资源级权限、报名/取消/取消活动站内通知、自动化测试和前端页面。
 
-Skeleton（HTTP 501）：FR-03～FR-23 的 M02～M07 业务，以及 FR-23 账号授权管理。路由契约见 `docs/api/API_CONTRACT_V0_1.md`。
+Skeleton（HTTP 501）：M02/M03、M05/M06/M07 业务，以及 FR-23 账号授权管理。路由契约见 `docs/api/API_CONTRACT_V0_1.md`。
+
+M04 的状态机、业务规则、通知事件和验证结果见 `docs/development/M04_ACTIVITY.md`。
 
 ## 当前 TODO
 
 - TODO(Member A)：M02/M03 Service、Repository、领域 Schema、测试和 UI。
-- TODO(Member B)：M04 Service、状态转换、报名/取消通知、测试和 UI。
 - TODO(Member C)：M05/M06/M07 查询、通知、报表/审计、测试和 UI。
 - TODO(Leader/Integration)：实现 FR-23，审查公共契约变更，持续集成。
 
