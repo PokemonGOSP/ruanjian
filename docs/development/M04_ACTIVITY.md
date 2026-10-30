@@ -115,8 +115,8 @@ npm.cmd run build
 - `vite build`：通过。
 
 测试使用内存 Repository / Notifier 替身，不依赖 MySQL，也未把工程配置改为 SQLite。
-Docker Hub 在本机不可达，`mysql:8.4` 镜像无法拉取，因此真实 MySQL 集成验证（migration + seed +
-浏览器联调）需在具备 MySQL 的环境按 `README.md` 执行，见 `ENGINEERING_ISSUES_V0_1.md` EI-04。
+2026-10-31 已在 MySQL 8.4.11 上完成 migration、seed 和活动全流程接口联调
+（见 `docs/integration/smoke_m01_m07.py`）；浏览器端到端点击验证未执行。
 
 ## 8. 与现有数据模型的关系
 
