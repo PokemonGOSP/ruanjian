@@ -52,6 +52,19 @@ describe('auth store', () => {
     expect(store.user).toEqual({ id: 2, username: 'leader01' })
   })
 
+  it('clears the session when the profile cannot be loaded after login', async () => {
+    loginApi.mockResolvedValue({ data: { data: { access_token: 'token-1' } } })
+    meApi.mockRejectedValue(new Error('profile unavailable'))
+    const store = useAuthStore()
+
+    await expect(store.login({})).rejects.toThrow('profile unavailable')
+
+    expect(store.loading).toBe(false)
+    expect(store.token).toBeNull()
+    expect(store.user).toBeNull()
+    expect(localStorage.getItem('access_token')).toBeNull()
+  })
+
   it('clears local state even if logout fails', async () => {
     localStorage.setItem('access_token', 'token-1')
     logoutApi.mockRejectedValue(new Error('network'))
@@ -59,8 +72,9 @@ describe('auth store', () => {
     store.token = 'token-1'
     store.user = { id: 1 }
 
-    await expect(store.logout()).rejects.toThrow('network')
+    await store.logout()
 
+    expect(logoutApi).toHaveBeenCalledOnce()
     expect(store.token).toBeNull()
     expect(store.user).toBeNull()
     expect(localStorage.getItem('access_token')).toBeNull()
