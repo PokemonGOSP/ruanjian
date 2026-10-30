@@ -118,6 +118,8 @@ npm.cmd install
 npm.cmd run build
 ```
 
+CI：`.github/workflows/ci.yml` 在 push/PR 时执行后端 `ruff check .`、`pytest` 和前端 `npm ci && npm run build`。
+
 ## 地址
 
 - Frontend：<http://localhost:5173>
