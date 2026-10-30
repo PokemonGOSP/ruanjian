@@ -34,6 +34,7 @@
 - [`docs/development/MODULE_OWNERSHIP.md`](../development/MODULE_OWNERSHIP.md)
 - [`docs/api/API_CONTRACT_V0_1.md`](../api/API_CONTRACT_V0_1.md) 中 M04 部分
 - [`REQUIREMENTS_BASELINE_V1_1.md`](../../REQUIREMENTS_BASELINE_V1_1.md) 中 FR-11～FR-16
+- [`docs/development/M04_ACTIVITY.md`](../development/M04_ACTIVITY.md)（实现说明、状态机、通知事件、验证）
 
 负责 M04，以及 M07-B 活动/报名统计。
 
