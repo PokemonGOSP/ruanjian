@@ -143,7 +143,7 @@ npm.cmd run build
 - M04（FR-11～FR-16）：活动申报、审核、发布、报名、取消/归档，含状态机与站内通知；
 - M05（FR-17～FR-18）：经费记录登记、修改、作废、查询与汇总；
 - M06（FR-19～FR-20）：站内通知列表、已读和管理通知发布；
-- M07：社团/成员统计（M07-A）、活动/报名统计（M07-B）、综合统计、经费 CSV 导出和 R04 审计日志查询（FR-21、FR-22）。
+- M07：社团/成员统计（M07-A）、综合统计（含活动/报名统计；M07-B 无独立 endpoint，由 `/reports/summary` 覆盖）、经费 CSV 导出和 R04 审计日志查询（FR-21、FR-22）。
 
 各模块实现说明见 `docs/development/M04_ACTIVITY.md`、`docs/development/M05_M06_M07_IMPLEMENTATION.md` 和 `docs/member-a/`。路由契约见 `docs/api/API_CONTRACT_V0_1.md`。
 
