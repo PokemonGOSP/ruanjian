@@ -1,38 +1,114 @@
-from fastapi import APIRouter
+"""M03 入团/退出、成员申请处理、名册与职务 API。"""
 
-from app.api.deps import CurrentPrincipal
-from app.api.v1.skeleton import todo
-from app.schemas.business import PayloadRequest, ReviewRequest
+from typing import Literal
+
+from fastapi import APIRouter, Query
+
+from app.api.deps import CurrentPrincipal, DbSession
+from app.schemas.business import ReviewRequest
+from app.schemas.common import ApiResponse, PageData
+from app.schemas.member import (
+    ClubMemberData,
+    ClubMemberUpdateRequest,
+    MembershipApplicationCreateRequest,
+    MembershipApplicationData,
+    MembershipProcessResult,
+)
+from app.services import member_service
 
 router = APIRouter(tags=["members"])
-# TODO(Member A): implement M03 membership services and club-scoped R02 checks.
+
+MembershipStatusQuery = Literal["PENDING", "APPROVED", "REJECTED", "WITHDRAWN"]
+MembershipTypeQuery = Literal["JOIN", "EXIT"]
+MemberStatusQuery = Literal["ACTIVE", "EXITED"]
+ScopeQuery = Literal["mine", "managed"]
 
 
-@router.post("/membership-applications")
-def create_membership_application(_: CurrentPrincipal, body: PayloadRequest):
-    todo("FR-08", "Member A")
+def _success(data):
+    return {"code": 0, "message": "success", "data": data}
 
 
-@router.get("/membership-applications")
-def list_membership_applications(_: CurrentPrincipal, page: int = 1, page_size: int = 20):
-    todo("FR-08/FR-09", "Member A")
+@router.post("/membership-applications", response_model=ApiResponse[MembershipApplicationData])
+def create_membership_application(
+    principal: CurrentPrincipal, db: DbSession, body: MembershipApplicationCreateRequest
+):
+    return _success(member_service.create_membership_application(db, principal, body))
 
 
-@router.post("/membership-applications/{application_id}/withdraw")
-def withdraw_membership_application(application_id: int, _: CurrentPrincipal):
-    todo("FR-08", "Member A")
+@router.get(
+    "/membership-applications",
+    response_model=ApiResponse[PageData[MembershipApplicationData]],
+)
+def list_membership_applications(
+    principal: CurrentPrincipal,
+    db: DbSession,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    scope: ScopeQuery | None = Query(None),
+    club_id: int | None = Query(None, ge=1),
+    status: MembershipStatusQuery | None = Query(None),
+    application_type: MembershipTypeQuery | None = Query(None),
+):
+    return _success(
+        member_service.list_membership_applications(
+            db,
+            principal,
+            page=page,
+            page_size=page_size,
+            scope=scope,
+            club_id=club_id,
+            status=status,
+            application_type=application_type,
+        )
+    )
 
 
-@router.post("/membership-applications/{application_id}/process")
-def process_membership_application(application_id: int, _: CurrentPrincipal, body: ReviewRequest):
-    todo("FR-09", "Member A")
+@router.post(
+    "/membership-applications/{application_id}/withdraw",
+    response_model=ApiResponse[MembershipApplicationData],
+)
+def withdraw_membership_application(application_id: int, principal: CurrentPrincipal, db: DbSession):
+    return _success(member_service.withdraw_membership_application(db, principal, application_id))
 
 
-@router.get("/clubs/{club_id}/members")
-def list_club_members(club_id: int, _: CurrentPrincipal, page: int = 1, page_size: int = 20):
-    todo("FR-10", "Member A")
+@router.post(
+    "/membership-applications/{application_id}/process",
+    response_model=ApiResponse[MembershipProcessResult],
+)
+def process_membership_application(
+    application_id: int, principal: CurrentPrincipal, db: DbSession, body: ReviewRequest
+):
+    return _success(member_service.process_membership_application(db, principal, application_id, body))
 
 
-@router.patch("/clubs/{club_id}/members/{member_id}")
-def update_club_member(club_id: int, member_id: int, _: CurrentPrincipal, body: PayloadRequest):
-    todo("FR-10", "Member A")
+@router.get(
+    "/clubs/{club_id}/members",
+    response_model=ApiResponse[PageData[ClubMemberData]],
+)
+def list_club_members(
+    club_id: int,
+    principal: CurrentPrincipal,
+    db: DbSession,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    status: MemberStatusQuery | None = Query(None),
+):
+    return _success(
+        member_service.list_club_members(
+            db, principal, club_id, page=page, page_size=page_size, status=status
+        )
+    )
+
+
+@router.patch(
+    "/clubs/{club_id}/members/{member_id}",
+    response_model=ApiResponse[ClubMemberData],
+)
+def update_club_member(
+    club_id: int,
+    member_id: int,
+    principal: CurrentPrincipal,
+    db: DbSession,
+    body: ClubMemberUpdateRequest,
+):
+    return _success(member_service.update_club_member(db, principal, club_id, member_id, body))
