@@ -4,8 +4,20 @@ import enum
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import BigInteger, Boolean, DateTime, Enum, ForeignKey, Integer, Numeric, String, Text, UniqueConstraint, func
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import (
+    BigInteger,
+    Boolean,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Integer,
+    Numeric,
+    String,
+    Text,
+    UniqueConstraint,
+    func,
+)
+from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
 
@@ -113,7 +125,9 @@ class Club(Base):
     __tablename__ = "clubs"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
-    registration_application_id: Mapped[int] = mapped_column(ForeignKey("club_registration_applications.id", ondelete="RESTRICT"), unique=True)
+    registration_application_id: Mapped[int] = mapped_column(
+        ForeignKey("club_registration_applications.id", ondelete="RESTRICT"), unique=True
+    )
     name: Mapped[str] = mapped_column(String(150), unique=True, index=True)
     description: Mapped[str] = mapped_column(Text)
     advisor_contact: Mapped[str | None] = mapped_column(String(255), nullable=True)
@@ -172,7 +186,9 @@ class MembershipApplication(Base):
     applicant_user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"), index=True)
     application_type: Mapped[MembershipType] = mapped_column(Enum(MembershipType))
     reason: Mapped[str | None] = mapped_column(Text, nullable=True)
-    status: Mapped[MembershipApplicationStatus] = mapped_column(Enum(MembershipApplicationStatus), default=MembershipApplicationStatus.PENDING)
+    status: Mapped[MembershipApplicationStatus] = mapped_column(
+        Enum(MembershipApplicationStatus), default=MembershipApplicationStatus.PENDING
+    )
     processed_by: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     process_comment: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
@@ -194,7 +210,9 @@ class Activity(Base):
     capacity: Mapped[int | None] = mapped_column(Integer, nullable=True)
     budget: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=0)
     review_status: Mapped[ReviewStatus] = mapped_column(Enum(ReviewStatus), default=ReviewStatus.DRAFT, index=True)
-    execution_status: Mapped[ActivityExecutionStatus] = mapped_column(Enum(ActivityExecutionStatus), default=ActivityExecutionStatus.UNPUBLISHED, index=True)
+    execution_status: Mapped[ActivityExecutionStatus] = mapped_column(
+        Enum(ActivityExecutionStatus), default=ActivityExecutionStatus.UNPUBLISHED, index=True
+    )
     review_comment: Mapped[str | None] = mapped_column(Text, nullable=True)
     reviewed_by: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     cancellation_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -252,7 +270,9 @@ class AuditLog(Base):
     __tablename__ = "audit_logs"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
-    actor_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    actor_user_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
+    )
     action: Mapped[str] = mapped_column(String(100), index=True)
     resource_type: Mapped[str] = mapped_column(String(100))
     resource_id: Mapped[str | None] = mapped_column(String(64), nullable=True)

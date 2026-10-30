@@ -1,8 +1,8 @@
 """Read-only consistency summary for Engineering Skeleton V0.1."""
 
+import re
 import sys
 from pathlib import Path
-import re
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -25,7 +25,8 @@ operations = [
     if method in http_methods
 ]
 implemented = [operation for operation in operations if operation in IMPLEMENTED_OPERATIONS]
-contract_text = (Path(__file__).resolve().parents[2] / "docs" / "api" / "API_CONTRACT_V0_1.md").read_text(encoding="utf-8")
+contract_path = Path(__file__).resolve().parents[2] / "docs" / "api" / "API_CONTRACT_V0_1.md"
+contract_text = contract_path.read_text(encoding="utf-8")
 contract_operations = {
     (method, path if path.startswith("/api/v1") else f"/api/v1{path}")
     for method, path in re.findall(r"^\| (GET|POST|PATCH|PUT|DELETE) \| `([^`]+)`", contract_text, re.MULTILINE)

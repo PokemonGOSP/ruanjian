@@ -1,6 +1,17 @@
 from fastapi import APIRouter
 
-from app.api.v1 import accounts, activities, annual_reviews, auth, clubs, finance, health, members, notifications, reports
+from app.api.v1 import (
+    accounts,
+    activities,
+    annual_reviews,
+    auth,
+    clubs,
+    finance,
+    health,
+    members,
+    notifications,
+    reports,
+)
 
 api_router = APIRouter()
 api_router.include_router(health.router)

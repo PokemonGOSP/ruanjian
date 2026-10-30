@@ -4,7 +4,6 @@ Revision ID: 20260915_0001
 Revises: None
 """
 from alembic import op
-
 from app.db.base import Base
 from app.db.models import domain  # noqa: F401
 

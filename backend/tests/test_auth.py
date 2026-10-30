@@ -21,7 +21,13 @@ def fake_db():
 
 
 def fake_principal():
-    return Principal(user_id=1, username="student01", display_name="学生一", system_roles={"R01"}, club_leader_ids=set())
+    return Principal(
+        user_id=1,
+        username="student01",
+        display_name="学生一",
+        system_roles={"R01"},
+        club_leader_ids=set(),
+    )
 
 
 app.dependency_overrides[get_db] = fake_db
@@ -29,7 +35,11 @@ client = TestClient(app)
 
 
 def test_login_returns_valid_jwt(monkeypatch):
-    monkeypatch.setattr(auth_routes, "authenticate_user", lambda db, username, password: SimpleNamespace(id=1, username=username))
+    monkeypatch.setattr(
+        auth_routes,
+        "authenticate_user",
+        lambda db, username, password: SimpleNamespace(id=1, username=username),
+    )
     response = client.post("/api/v1/auth/login", json={"username": "student01", "password": "Student123!"})
     assert response.status_code == 200
     token = response.json()["data"]["access_token"]
