@@ -7,7 +7,6 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 
 from app.api.deps import CurrentPrincipal, DbSession
-from app.api.v1.skeleton import todo
 from app.core.exceptions import AppError
 from app.core.permissions import require_system_role
 from app.core.security import hash_password
