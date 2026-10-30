@@ -7,8 +7,11 @@ from app.api.deps import get_current_principal
 from app.api.v1 import auth as auth_routes
 from app.core.config import get_settings
 from app.core.permissions import Principal
+from app.core.security import hash_password
+from app.db.models.domain import AccountStatus
 from app.db.session import get_db
 from app.main import app
+from app.services import auth_service
 
 
 class FakeDb:
@@ -55,3 +58,34 @@ def test_me_returns_roles_and_club_authorizations():
     assert response.json()["data"]["username"] == "student01"
     assert response.json()["data"]["system_roles"] == ["R01"]
     app.dependency_overrides.pop(get_current_principal, None)
+
+
+class ScalarDb:
+    def __init__(self, user):
+        self.user = user
+
+    def scalar(self, _stmt):
+        return self.user
+
+
+def make_login_user(status=AccountStatus.NORMAL):
+    return SimpleNamespace(status=status, password_hash=hash_password("Secret123!"))
+
+
+def test_authenticate_user_rejects_missing_account():
+    assert auth_service.authenticate_user(ScalarDb(None), "nobody", "Secret123!") is None
+
+
+def test_authenticate_user_rejects_disabled_account():
+    user = make_login_user(AccountStatus.DISABLED)
+    assert auth_service.authenticate_user(ScalarDb(user), "student01", "Secret123!") is None
+
+
+def test_authenticate_user_rejects_wrong_password():
+    user = make_login_user()
+    assert auth_service.authenticate_user(ScalarDb(user), "student01", "wrong-password") is None
+
+
+def test_authenticate_user_returns_matching_user():
+    user = make_login_user()
+    assert auth_service.authenticate_user(ScalarDb(user), "student01", "Secret123!") is user
