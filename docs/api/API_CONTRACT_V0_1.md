@@ -81,23 +81,19 @@ FR-02 是所有受保护 endpoint 的横切权限需求：后续实现必须同�
 
 | Method | Endpoint | FR | 角色/资源归属 | Request | Response data | 状态要求 | 主要错误 | 实现状态 |
 |---|---|---|---|---|---|---|---|---|
-| POST | `/activities` | FR-11 | 目标社团 R02 | ActivityCreateRequest | Activity | 新建审核状态草稿 | 40302,40001 | implemented |
-| GET | `/activities` | FR-14 | 登录用户按可见范围 | page,page_size | PageData<Activity> | 无 | 40101 | implemented |
-| GET | `/activities/{activity_id}` | FR-14 | 登录用户按可见范围 | 无 | Activity | 活动存在 | 40401 | implemented |
-| PATCH | `/activities/{activity_id}` | FR-11 | 目标社团 R02 | PayloadRequest | Activity | 审核状态草稿/已撤回 | 40302,40901 | implemented |
-| POST | `/activities/{activity_id}/submit` | FR-12 | 目标社团 R02 | 无 | Activity | 草稿/已撤回 → 待审核 | 40302,40901 | implemented |
-| POST | `/activities/{activity_id}/withdraw` | FR-12 | 提交社团 R02 | 无 | Activity | 待审核 → 已撤回 | 40302,40901 | implemented |
-| POST | `/activities/{activity_id}/review` | FR-13 | R03 | ReviewRequest | Activity | 待审核 → 已通过/已驳回 | 40301,40901 | implemented |
-| POST | `/activities/{activity_id}/publish` | FR-14 | 目标社团 R02 | 无 | Activity | 已通过且未发布 → 报名中 | 40302,40901 | implemented |
-| POST | `/activities/{activity_id}/registrations` | FR-15 | R01 本人 | 无 | ActivityRegistration | 报名中、未超期/容量 | 40901,40902 | implemented |
-| DELETE | `/activities/{activity_id}/registrations/me` | FR-15 | R01 报名本人 | 无 | EmptyObject | 已报名且允许取消 | 40401,40901 | implemented |
-| GET | `/activities/{activity_id}/registrations` | FR-15 | 目标社团 R02 | page,page_size | PageData<Registration> | 活动存在 | 40302,40401 | implemented |
-| POST | `/activities/{activity_id}/cancel` | FR-16 | 目标社团 R02 | ReasonRequest | Activity | 执行阶段且非已结束/已取消 → 已取消 | 40302,40901 | implemented |
-| POST | `/activities/{activity_id}/end` | FR-16 | 目标社团 R02 | PayloadRequest(summary) | Activity | 允许状态 → 已结束 | 40302,40901 | implemented |
-
-M04 实现说明：路径、method、FR 映射和角色不变；`Activity` 响应增加 `registration_count`、
-`my_registration_status`，报名名单条目增加 `user` 摘要。状态机、通知事件和验证见
-`docs/development/M04_ACTIVITY.md`。
+| POST | `/activities` | FR-11 | 目标社团 R02 | ActivityCreateRequest | Activity | 新建审核状态草稿 | 40302,40001 | skeleton |
+| GET | `/activities` | FR-14 | 登录用户按可见范围 | page,page_size | PageData<Activity> | 无 | 40101 | skeleton |
+| GET | `/activities/{activity_id}` | FR-14 | 登录用户按可见范围 | 无 | Activity | 活动存在 | 40401 | skeleton |
+| PATCH | `/activities/{activity_id}` | FR-11 | 目标社团 R02 | PayloadRequest | Activity | 审核状态草稿/已撤回 | 40302,40901 | skeleton |
+| POST | `/activities/{activity_id}/submit` | FR-12 | 目标社团 R02 | 无 | Activity | 草稿/已撤回 → 待审核 | 40302,40901 | skeleton |
+| POST | `/activities/{activity_id}/withdraw` | FR-12 | 提交社团 R02 | 无 | Activity | 待审核 → 已撤回 | 40302,40901 | skeleton |
+| POST | `/activities/{activity_id}/review` | FR-13 | R03 | ReviewRequest | Activity | 待审核 → 已通过/已驳回 | 40301,40901 | skeleton |
+| POST | `/activities/{activity_id}/publish` | FR-14 | 目标社团 R02 | 无 | Activity | 已通过且未发布 → 报名中 | 40302,40901 | skeleton |
+| POST | `/activities/{activity_id}/registrations` | FR-15 | R01 本人 | 无 | ActivityRegistration | 报名中、未超期/容量 | 40901,40902 | skeleton |
+| DELETE | `/activities/{activity_id}/registrations/me` | FR-15 | R01 报名本人 | 无 | EmptyObject | 已报名且允许取消 | 40401,40901 | skeleton |
+| GET | `/activities/{activity_id}/registrations` | FR-15 | 目标社团 R02 | page,page_size | PageData<Registration> | 活动存在 | 40302,40401 | skeleton |
+| POST | `/activities/{activity_id}/cancel` | FR-16 | 目标社团 R02 | ReasonRequest | Activity | 执行阶段且非已结束/已取消 → 已取消 | 40302,40901 | skeleton |
+| POST | `/activities/{activity_id}/end` | FR-16 | 目标社团 R02 | PayloadRequest(summary) | Activity | 允许状态 → 已结束 | 40302,40901 | skeleton |
 
 取消后禁止报名并通过 FR-19 通知已报名用户；R03 可查询但 V0.1 契约不提供强制取消 endpoint；不处理退款、场地释放或票务。
 

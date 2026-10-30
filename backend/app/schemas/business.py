@@ -35,33 +35,12 @@ class AccountUpdateRequest(BaseModel):
 
 
 class ActivityCreateRequest(BaseModel):
-    """FR-11：R02 创建活动申请。时间字段为不带时区的本地时间，与数据库 DATETIME 一致。"""
-
     club_id: int
     title: str = Field(min_length=1, max_length=200)
-    description: str = Field(min_length=1, max_length=5000)
+    description: str
     location: str = Field(min_length=1, max_length=255)
     starts_at: datetime
     ends_at: datetime
     registration_deadline: datetime | None = None
-    capacity: int | None = Field(default=None, ge=1, le=100000)
-    budget: Decimal = Field(default=Decimal("0"), ge=0, max_digits=12, decimal_places=2)
-
-
-class ActivityUpdateRequest(BaseModel):
-    """FR-11：仅草稿/已撤回状态可编辑；未出现的字段保持原值。"""
-
-    title: str | None = Field(default=None, min_length=1, max_length=200)
-    description: str | None = Field(default=None, min_length=1, max_length=5000)
-    location: str | None = Field(default=None, min_length=1, max_length=255)
-    starts_at: datetime | None = None
-    ends_at: datetime | None = None
-    registration_deadline: datetime | None = None
-    capacity: int | None = Field(default=None, ge=1, le=100000)
-    budget: Decimal | None = Field(default=None, ge=0, max_digits=12, decimal_places=2)
-
-
-class ActivityEndRequest(BaseModel):
-    """FR-16：活动结束时可选填写活动总结。"""
-
-    summary: str | None = Field(default=None, max_length=5000)
+    capacity: int | None = Field(default=None, ge=1)
+    budget: Decimal = Field(default=Decimal("0"), ge=0)

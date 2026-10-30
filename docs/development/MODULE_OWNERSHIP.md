@@ -6,7 +6,7 @@
 |---|---|---|---|
 | Leader / Integration | M01、公共层 | Engineering Skeleton、身份权限骨架、整体数据模型、API Contract、异常响应、Migration、Seed、集成与 CR | health/auth/me 已实现；FR-23 路由 skeleton |
 | Member A | M02、M03 | 社团注册与年审、成员管理 | `TODO(Member A)`；契约和路由 skeleton 已预留 |
-| Member B | M04 | 活动管理 | 已实现 FR-11～FR-16（Service/状态机/报名/通知/测试/UI），见 `M04_ACTIVITY.md` |
+| Member B | M04 | 活动管理 | `TODO(Member B)`；契约和路由 skeleton 已预留 |
 | Member C | M05、M06、M07 | 经费、通知、统计与审计 | `TODO(Member C)`；契约和路由 skeleton 已预留 |
 
 ## 协作规则
