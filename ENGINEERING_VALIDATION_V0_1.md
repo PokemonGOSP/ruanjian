@@ -1,6 +1,6 @@
 # Engineering Validation V0.1
 
-> 验证日期：2026-09-21
+> 验证日期：2026-09-21（初版），2026-10-31（全模块集成复验）
 
 ## 1. 环境与数据库
 
@@ -52,8 +52,23 @@
 | API Contract | PASS | FR-01～FR-23 覆盖完整，无缺失或额外项 |
 | SQLite/替代数据库 | PASS | 未使用 SQLite、PostgreSQL、MariaDB 或其他替代数据库 |
 
-## 5. 最终状态
+## 5. 全模块集成验证（2026-10-31）
+
+真实 MySQL 8.4（Server 8.4.11，`club_management`）上执行 migration（`20260915_0001`）与 Seed 后，对 M01～M07 做端到端联调。
+
+| 验证项 | 状态 | 实际结果 |
+|---|---|---|
+| Backend pytest | PASS | 95 passed |
+| M01 FR-23 账号管理 | PASS | 账号列表、非 R04 返回 403、创建（自动 R01）、停用/恢复、授予/撤销 R03、授予/撤销社团 R02、R02 缺少 club_id 返回 400 |
+| M02/M03 社团与成员 | PASS | 成员 A 的 `smoke_m02_m03.py` 全部通过 |
+| M04 活动管理 | PASS | 草稿 → 提交 → R03 审核通过 → 发布 → 学生报名 → 取消报名 |
+| M05 经费 | PASS | 登记支出、按社团汇总 |
+| M06 通知 | PASS | 管理通知发布、学生收件箱、标记已读 |
+| M07 统计与审计 | PASS | 综合统计（社团/成员/活动/报名）、经费 CSV 导出、审计日志查询 |
+| Frontend build | PASS | Vite 构建成功，120 modules transformed |
+
+## 6. 最终状态
 
 - `REQUIRES_CR`：不存在。
-- EI-02（MySQL 8 镜像/运行环境）已解除，详见 `ENGINEERING_ISSUES_V0_1.md`。
-- 工程状态：`TEAM_READY_FOR_PARALLEL_DEVELOPMENT`。
+- EI-01～EI-05 已全部解除，详见 `ENGINEERING_ISSUES_V0_1.md`。
+- 工程状态：`ALL_MODULES_IMPLEMENTED_AND_INTEGRATION_VERIFIED`。

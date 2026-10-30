@@ -37,14 +37,16 @@
 ## EI-04：本机 Docker Hub 不可达、缺少 MySQL，M04～M07 真实数据库集成验证待执行
 
 - 类型：环境/网络问题
-- 状态：`OPEN`
+- 状态：`RESOLVED`
 - 发现时间：2026-10-28（成员 B 记录 M04 部分，成员 C 补充 M05/M06/M07 部分，集成时合并）
-- 现象：`docker images` 为空；`docker pull mysql:8.4` 访问 `registry-1.docker.io:443` 超时；本机未安装 MySQL 服务，无法执行 `alembic upgrade head`、`python -m app.db.seed` 和真实接口联调。
-- 影响：
-  - M04：Service/状态机/权限/通知由 11 个 pytest 用例覆盖（内存 Repository 替身），SQL 已按 MySQL 方言编译检查。
-  - M05/M06/M07：成员 C 与既有单元/接口测试通过；OpenAPI 生成和前端构建通过。
-  - 三个模块的真实 migration + seed + DB 端到端联调均未在本机执行。
-- 处理建议：在具备 MySQL 8 或可拉取镜像的环境执行 `docker compose up -d mysql`、`alembic upgrade head`、`python -m app.db.seed`，再按 `docs/development/M04_ACTIVITY.md` 第 7 节及各模块实现文档复验。
+- 现象：当时 `docker images` 为空；`docker pull mysql:8.4` 访问 `registry-1.docker.io:443` 超时；本机未安装 MySQL 服务，无法执行 `alembic upgrade head`、`python -m app.db.seed` 和真实接口联调。
+- 影响：M04～M07 的真实 migration + seed + DB 端到端联调未执行。
+- 处理（2026-10-31）：Docker Desktop 启动后拉取并运行 `mysql:8.4`（Server 8.4.11），在真实库 `club_management` 上执行 `alembic upgrade head`（版本 `20260915_0001`）与 `python -m app.db.seed`。
+- 验证（2026-10-31，负责人环境）：
+  - 真实数据库共 15 张物理表（14 张业务表 + `alembic_version`），Seed 数据完整。
+  - 后端 pytest 全量通过（95 passed）。
+  - 冒烟联调 26 项全部通过：四账号真实登录、health 数据库 up、M01 FR-23（列表/403/创建/停用恢复/R03 授予撤销/R02 授予撤销/缺 club_id 400）、M04（草稿→提交→R03 审核→发布→学生报名/取消）、M05（登记经费/汇总）、M06（管理通知/学生收件箱/标记已读）、M07（综合统计/CSV 导出/审计日志）。
+  - 成员 A 的 `smoke_m02_m03.py` 在真实库上全部通过（M02/M03 社团与成员流程）。
 - REQUIRES_CR：否。
 
 ## EI-05：请求参数校验错误响应无法序列化
@@ -62,4 +64,4 @@
 ## 结论
 
 - 未发现需求层矛盾，不存在 `REQUIRES_CR`。
-- EI-01、EI-02、EI-03、EI-05 已解除；EI-04 为当前机器 Docker/网络限制，需在具备 MySQL 8 的环境补做 M04～M07 端到端集成验证。
+- EI-01、EI-02、EI-03、EI-04、EI-05 已全部解除。

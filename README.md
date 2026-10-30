@@ -1,6 +1,6 @@
 # 高校社团活动管理系统 — Engineering Skeleton V0.1
 
-基于 `REQUIREMENTS_BASELINE_V1_1.md` 的课程工程。已跑通本地测试账号登录、JWT、`/auth/me` 和前端认证状态，并实现 M01 账号与角色授权（FR-23）、M02/M03 社团与成员管理（FR-03～FR-10）、M04 活动管理（FR-11～FR-16）、M05 经费（FR-17～FR-18）、M06 通知（FR-19～FR-20）、M07 统计与审计（FR-21～FR-22，含 M07-A 社团/成员统计）。真实 MySQL 端到端联调待执行（EI-04）；M01 账号管理页面仍为占位页。
+基于 `REQUIREMENTS_BASELINE_V1_1.md` 的课程工程。已跑通本地测试账号登录、JWT、`/auth/me` 和前端认证状态，并实现 M01 账号与角色授权（FR-23，含账号管理页面）、M02/M03 社团与成员管理（FR-03～FR-10）、M04 活动管理（FR-11～FR-16）、M05 经费（FR-17～FR-18）、M06 通知（FR-19～FR-20）、M07 统计与审计（FR-21～FR-22，含 M07-A 社团/成员统计）。已在真实 MySQL 8.4 上完成 migration、Seed 和 M01～M07 端到端联调。
 
 ## 技术栈
 
@@ -149,7 +149,6 @@ npm.cmd run build
 
 ## 当前 TODO
 
-- 在具备 MySQL 8 的环境执行真实 migration、Seed 和 M01～M07 端到端联调（EI-04）。
 - 清理 `app/db/seed.py`、`app/db/models/domain.py`、`tests/test_auth.py` 的既有 ruff 欠账。
 
 环境实测结果见 `ENGINEERING_VALIDATION_V0_1.md`；环境或需求问题见 `ENGINEERING_ISSUES_V0_1.md`。

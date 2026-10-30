@@ -7,7 +7,7 @@
 | Leader / Integration | M01、公共层 | Engineering Skeleton、身份权限骨架、整体数据模型、API Contract、异常响应、Migration、Seed、集成与 CR | health/auth/me 已实现；FR-23 账号与角色授权 6 个 endpoint + 15 个测试 + AccountsView 管理页面，见 `M01_ACCOUNTS.md` |
 | Member A | M02、M03 | 社团注册与年审、成员管理 | 已实现 FR-03～FR-10 及 M07-A 社团/成员统计（Service/Repository/权限/测试/UI），见 `docs/member-a/` |
 | Member B | M04 | 活动管理 | 已实现 FR-11～FR-16（Service/状态机/报名/通知/测试/UI），见 `M04_ACTIVITY.md` |
-| Member C | M05、M06、M07 | 经费、通知、统计与审计 | 已实现 M05/M06/M07 API、权限、测试和前端，见 `M05_M06_M07_IMPLEMENTATION.md`；真实 MySQL 集成验证待负责人环境执行（EI-04） |
+| Member C | M05、M06、M07 | 经费、通知、统计与审计 | 已实现 M05/M06/M07 API、权限、测试和前端，见 `M05_M06_M07_IMPLEMENTATION.md`；真实 MySQL 集成验证已通过（EI-04 已解除） |
 
 ## 协作规则
 
