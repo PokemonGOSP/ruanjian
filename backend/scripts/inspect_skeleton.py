@@ -1,21 +1,17 @@
 """Read-only consistency summary for Engineering Skeleton V0.1."""
 
+import inspect
 import re
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from fastapi.routing import APIRoute  # noqa: E402
+
 from app.db.base import Base  # noqa: E402
 from app.db.models import domain as _domain  # noqa: E402,F401
 from app.main import app  # noqa: E402
-
-IMPLEMENTED_OPERATIONS = {
-    ("GET", "/api/v1/health"),
-    ("POST", "/api/v1/auth/login"),
-    ("POST", "/api/v1/auth/logout"),
-    ("GET", "/api/v1/auth/me"),
-}
 
 http_methods = {"get", "post", "put", "patch", "delete"}
 operations = [
@@ -24,7 +20,23 @@ operations = [
     for method in path_item
     if method in http_methods
 ]
-implemented = [operation for operation in operations if operation in IMPLEMENTED_OPERATIONS]
+route_map = {
+    (method.upper(), route.path): route
+    for route in app.routes
+    if isinstance(route, APIRoute)
+    for method in route.methods
+    if method.lower() in http_methods
+}
+
+
+def is_skeleton(operation: tuple[str, str]) -> bool:
+    route = route_map.get(operation)
+    if route is None:
+        return False
+    return "todo(" in inspect.getsource(route.endpoint)
+
+
+implemented = [operation for operation in operations if not is_skeleton(operation)]
 contract_path = Path(__file__).resolve().parents[2] / "docs" / "api" / "API_CONTRACT_V0_1.md"
 contract_text = contract_path.read_text(encoding="utf-8")
 contract_operations = {
@@ -39,5 +51,5 @@ print(f"SKELETON={len(operations) - len(implemented)}")
 print(f"CONTRACT_MISSING={sorted(set(operations) - contract_operations)}")
 print(f"CONTRACT_EXTRA={sorted(contract_operations - set(operations))}")
 for method, path in sorted(operations, key=lambda item: (item[1], item[0])):
-    status = "implemented" if (method, path) in IMPLEMENTED_OPERATIONS else "skeleton"
+    status = "skeleton" if is_skeleton((method, path)) else "implemented"
     print(f"{method:7} {path} [{status}]")

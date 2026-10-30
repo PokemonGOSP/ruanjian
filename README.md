@@ -149,6 +149,6 @@ npm.cmd run build
 
 ## 当前 TODO
 
-- 清理 `app/db/seed.py`、`app/db/models/domain.py`、`tests/test_auth.py` 的既有 ruff 欠账。
+- 无阻塞 TODO；后续需求变更按 `ENGINEERING_ISSUES_V0_1.md` 的流程记录。
 
 环境实测结果见 `ENGINEERING_VALIDATION_V0_1.md`；环境或需求问题见 `ENGINEERING_ISSUES_V0_1.md`。

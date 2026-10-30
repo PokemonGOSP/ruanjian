@@ -47,8 +47,8 @@
 | 验证项 | 状态 | 实际结果 |
 |---|---|---|
 | API operations | PASS | 56 |
-| 已实现 operations | PASS | 4：health、login、logout、me |
-| Skeleton operations | PASS | 52，仍保留 Skeleton / HTTP 501 |
+| 已实现 operations | PASS | 56（2026-10-31 复验，`scripts/inspect_skeleton.py`） |
+| Skeleton operations | PASS | 0，全部 handler 已实现 |
 | API Contract | PASS | FR-01～FR-23 覆盖完整，无缺失或额外项 |
 | SQLite/替代数据库 | PASS | 未使用 SQLite、PostgreSQL、MariaDB 或其他替代数据库 |
 
@@ -66,6 +66,7 @@
 | M06 通知 | PASS | 管理通知发布、学生收件箱、标记已读 |
 | M07 统计与审计 | PASS | 综合统计（社团/成员/活动/报名）、经费 CSV 导出、审计日志查询 |
 | Frontend build | PASS | Vite 构建成功，120 modules transformed |
+| Ruff | PASS | `ruff check .` 全量通过，无欠账 |
 
 冒烟脚本已入库：`docs/integration/smoke_m01_m07.py`（M01/M04～M07），M02/M03 见 `docs/member-a/integration/smoke_m02_m03.py`。
 
