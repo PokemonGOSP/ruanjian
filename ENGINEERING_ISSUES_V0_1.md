@@ -44,7 +44,7 @@
 - 处理（2026-10-31）：Docker Desktop 启动后拉取并运行 `mysql:8.4`（Server 8.4.11），在真实库 `club_management` 上执行 `alembic upgrade head`（版本 `20260915_0001`）与 `python -m app.db.seed`。
 - 验证（2026-10-31，负责人环境）：
   - 真实数据库共 15 张物理表（14 张业务表 + `alembic_version`），Seed 数据完整。
-  - 后端 pytest 全量通过（95 passed）。
+  - 后端 pytest 全量通过（当前 130 passed，覆盖率 83%）。
   - 冒烟联调 26 项全部通过：四账号真实登录、health 数据库 up、M01 FR-23（列表/403/创建/停用恢复/R03 授予撤销/R02 授予撤销/缺 club_id 400）、M04（草稿→提交→R03 审核→发布→学生报名/取消）、M05（登记经费/汇总）、M06（管理通知/学生收件箱/标记已读）、M07（综合统计/CSV 导出/审计日志）。
   - 成员 A 的 `smoke_m02_m03.py` 在真实库上全部通过（M02/M03 社团与成员流程）。
 - REQUIRES_CR：否。

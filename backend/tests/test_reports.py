@@ -1,4 +1,6 @@
+from datetime import date, datetime
 from decimal import Decimal
+from types import SimpleNamespace
 
 from app.services import finance_service, report_service
 
@@ -39,6 +41,9 @@ class FakeSummaryDb:
 
     def scalars(self, _stmt):
         return FakeScalarsResult([1, 3])
+
+    def get(self, _model, key):
+        return SimpleNamespace(id=key)
 
 
 def test_build_summary_aggregates_counts_and_finance(r03):
@@ -132,3 +137,75 @@ def test_export_csv_stream(client, monkeypatch, override_auth, override_db, r02)
     assert response.content.startswith(b"\xef\xbb\xbf")
     assert "text/csv" in response.headers["content-type"]
     assert response.headers["content-disposition"] == 'attachment; filename="finance-records.csv"'
+
+
+# ---------------------------------------------------------------- Service 层
+def test_build_summary_accepts_club_filter_and_dates(r03):
+    data = report_service.build_summary(
+        FakeSummaryDb(),
+        r03,
+        club_id=1,
+        date_from=date(2026, 10, 1),
+        date_to=date(2026, 10, 31),
+    )
+    assert data["club_id"] == 1
+    assert data["club_ids"] == [1]
+    assert data["date_from"] == date(2026, 10, 1)
+    assert data["finance_balance"] == Decimal("412.00")
+
+
+class FakeAuditDb:
+    def __init__(self, rows, total=1):
+        self.rows = rows
+        self.total = total
+
+    def scalar(self, _stmt):
+        return self.total
+
+    def execute(self, _stmt):
+        return FakeResult(self.rows)
+
+
+def make_audit_row(detail_json, row_id=1):
+    return SimpleNamespace(
+        id=row_id,
+        actor_user_id=6,
+        actor_username="admin01",
+        action="FINANCE_RECORD_CREATED",
+        resource_type="finance_record",
+        resource_id="9",
+        detail_json=detail_json,
+        ip_address="127.0.0.1",
+        created_at=datetime(2026, 10, 1, 9, 0),
+    )
+
+
+def test_list_audit_logs_parses_detail_json():
+    rows = [
+        make_audit_row('{"club_id": 1, "amount": "10.00"}', 1),
+        make_audit_row("not-json", 2),
+        make_audit_row(None, 3),
+    ]
+    items, total = report_service.list_audit_logs(FakeAuditDb(rows))
+
+    assert total == 1
+    assert items[0]["detail"] == {"club_id": 1, "amount": "10.00"}
+    assert items[1]["detail"] == "not-json"
+    assert items[2]["detail"] is None
+
+
+def test_list_audit_logs_accepts_all_filters():
+    rows = [make_audit_row('{"reason": "重复登记"}')]
+    items, total = report_service.list_audit_logs(
+        FakeAuditDb(rows, total=3),
+        actor_user_id=6,
+        action="FINANCE_RECORD_VOIDED",
+        resource_type="finance_record",
+        date_from=date(2026, 10, 1),
+        date_to=date(2026, 10, 31),
+        page=2,
+        page_size=10,
+    )
+    assert total == 3
+    assert items[0]["action"] == "FINANCE_RECORD_CREATED"
+    assert items[0]["detail"] == {"reason": "重复登记"}

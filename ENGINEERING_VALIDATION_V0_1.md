@@ -58,7 +58,8 @@
 
 | 验证项 | 状态 | 实际结果 |
 |---|---|---|
-| Backend pytest | PASS | 99 passed（含契约一致性测试与异常响应测试） |
+| Backend pytest | PASS | 130 passed（含契约一致性、异常响应、M05～M07 service 测试） |
+| Backend coverage | PASS | `pytest --cov=app`：83%（finance 89%、notification 97%、report 100%） |
 | M01 FR-23 账号管理 | PASS | 账号列表、非 R04 返回 403、创建（自动 R01）、停用/恢复、授予/撤销 R03、授予/撤销社团 R02、R02 缺少 club_id 返回 400 |
 | M02/M03 社团与成员 | PASS | 成员 A 的 `smoke_m02_m03.py` 全部通过 |
 | M04 活动管理 | PASS | 草稿 → 提交 → R03 审核通过 → 发布 → 学生报名 → 取消报名 |

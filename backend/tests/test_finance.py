@@ -5,10 +5,19 @@ from types import SimpleNamespace
 import pytest
 
 from app.core.exceptions import AppError
-from app.db.models.domain import FinanceType, RecordStatus
-from app.schemas.finance import FinanceRecordUpdateRequest
+from app.db.models.domain import (
+    Activity,
+    AuditLog,
+    Club,
+    FinanceRecord,
+    FinanceType,
+    RecordStatus,
+    User,
+)
+from app.schemas.finance import FinanceRecordCreateRequest, FinanceRecordUpdateRequest
 from app.services import finance_service
 from app.services.club_scope import resolve_club_scope
+from tests.helpers import FakeDb
 
 
 class FakeClubDb:
@@ -199,3 +208,203 @@ def test_list_finance_records_for_r03(client, monkeypatch, override_auth, overri
     response = client.get("/api/v1/finance-records")
     assert response.status_code == 200
     assert response.json()["data"] == {"items": [], "page": 1, "page_size": 20, "total": 0}
+
+
+# ---------------------------------------------------------------- Service 层
+def make_finance_db(*, club_id=1, activity_club_id=1) -> FakeDb:
+    db = FakeDb()
+    db.entities[(Club, club_id)] = SimpleNamespace(id=club_id, name="星河读书社")
+    db.entities[(Activity, 5)] = SimpleNamespace(id=5, club_id=activity_club_id, title="读书会")
+    db.entities[(User, 3)] = SimpleNamespace(id=3, display_name="社团负责人一")
+    return db
+
+
+def make_create_body(**overrides):
+    payload = {
+        "club_id": 1,
+        "record_type": "EXPENSE",
+        "amount": Decimal("35.50"),
+        "occurred_on": datetime(2026, 10, 1, 9, 0),
+        "description": "测试支出",
+    }
+    payload.update(overrides)
+    return FinanceRecordCreateRequest(**payload)
+
+
+def make_record(*, record_id=1, club_id=1, status=RecordStatus.ACTIVE):
+    record = FinanceRecord(
+        club_id=club_id,
+        activity_id=None,
+        record_type=FinanceType.EXPENSE,
+        amount=Decimal("20.00"),
+        occurred_on=datetime(2026, 10, 1, 9, 0),
+        description="记录",
+        voucher_reference=None,
+        status=status,
+        created_by=3,
+    )
+    record.id = record_id
+    return record
+
+
+def test_create_record_requires_club_leader(r01):
+    with pytest.raises(AppError) as exc:
+        finance_service.create_record(FakeDb(), r01, make_create_body())
+    assert exc.value.code == 40302
+
+
+def test_create_record_requires_existing_club(r02):
+    with pytest.raises(AppError) as exc:
+        finance_service.create_record(FakeDb(), r02, make_create_body())
+    assert exc.value.code == 40401
+
+
+def test_create_record_rejects_activity_from_other_club(r02):
+    db = make_finance_db(activity_club_id=2)
+    with pytest.raises(AppError) as exc:
+        finance_service.create_record(db, r02, make_create_body(activity_id=5))
+    assert exc.value.code == 40002
+
+
+def test_create_record_persists_audit_and_serializes(r02):
+    db = make_finance_db()
+    data = finance_service.create_record(db, r02, make_create_body(activity_id=5))
+
+    assert data["club_name"] == "星河读书社"
+    assert data["activity_title"] == "读书会"
+    assert data["created_by_name"] == "社团负责人一"
+    assert data["status"] == "ACTIVE"
+    assert db.commits == 1
+    audits = db.objects(AuditLog)
+    assert len(audits) == 1
+    assert audits[0].action == "FINANCE_RECORD_CREATED"
+
+
+def test_update_record_missing_returns_404(r02):
+    with pytest.raises(AppError) as exc:
+        finance_service.update_record(FakeDb(), r02, 99, FinanceRecordUpdateRequest(amount=Decimal("1.00")))
+    assert exc.value.code == 40401
+
+
+def test_update_record_requires_leader(r01):
+    db = FakeDb()
+    db.entities[(FinanceRecord, 1)] = make_record()
+    with pytest.raises(AppError) as exc:
+        finance_service.update_record(db, r01, 1, FinanceRecordUpdateRequest(amount=Decimal("1.00")))
+    assert exc.value.code == 40302
+
+
+def test_update_record_rejects_voided(r02):
+    db = FakeDb()
+    db.entities[(FinanceRecord, 1)] = make_record(status=RecordStatus.VOIDED)
+    with pytest.raises(AppError) as exc:
+        finance_service.update_record(db, r02, 1, FinanceRecordUpdateRequest(amount=Decimal("1.00")))
+    assert exc.value.code == 40901
+
+
+def test_update_record_rejects_empty_body(r02):
+    db = FakeDb()
+    db.entities[(FinanceRecord, 1)] = make_record()
+    with pytest.raises(AppError) as exc:
+        finance_service.update_record(db, r02, 1, FinanceRecordUpdateRequest())
+    assert exc.value.code == 40002
+
+
+def test_update_record_rejects_activity_from_other_club(r02):
+    db = make_finance_db(activity_club_id=2)
+    db.entities[(FinanceRecord, 1)] = make_record()
+    with pytest.raises(AppError) as exc:
+        finance_service.update_record(db, r02, 1, FinanceRecordUpdateRequest(activity_id=5))
+    assert exc.value.code == 40002
+
+
+def test_update_record_changes_type_amount_and_audits(r02):
+    db = make_finance_db()
+    record = make_record()
+    record.activity_id = 5
+    db.entities[(FinanceRecord, 1)] = record
+
+    data = finance_service.update_record(
+        db,
+        r02,
+        1,
+        FinanceRecordUpdateRequest(record_type="INCOME", amount=Decimal("99.00"), voucher_reference=None),
+    )
+
+    assert record.record_type == FinanceType.INCOME
+    assert record.amount == Decimal("99.00")
+    assert record.voucher_reference is None
+    assert data["amount"] == Decimal("99.00")
+    assert db.commits == 1
+    audits = db.objects(AuditLog)
+    assert audits[0].action == "FINANCE_RECORD_UPDATED"
+
+
+def test_void_record_missing_returns_404(r02):
+    with pytest.raises(AppError) as exc:
+        finance_service.void_record(FakeDb(), r02, 99, "重复登记")
+    assert exc.value.code == 40401
+
+
+def test_void_record_requires_leader(r01):
+    db = FakeDb()
+    db.entities[(FinanceRecord, 1)] = make_record()
+    with pytest.raises(AppError) as exc:
+        finance_service.void_record(db, r01, 1, "重复登记")
+    assert exc.value.code == 40302
+
+
+def test_void_record_rejects_already_voided(r02):
+    db = FakeDb()
+    db.entities[(FinanceRecord, 1)] = make_record(status=RecordStatus.VOIDED)
+    with pytest.raises(AppError) as exc:
+        finance_service.void_record(db, r02, 1, "重复登记")
+    assert exc.value.code == 40901
+
+
+def test_void_record_marks_voided_and_audits(r02):
+    db = make_finance_db()
+    record = make_record()
+    db.entities[(FinanceRecord, 1)] = record
+
+    data = finance_service.void_record(db, r02, 1, "重复登记")
+
+    assert record.status == RecordStatus.VOIDED
+    assert record.voided_by == r02.user_id
+    assert record.void_reason == "重复登记"
+    assert data["voided_by"] == r02.user_id
+    assert db.objects(AuditLog)[0].action == "FINANCE_RECORD_VOIDED"
+
+
+def test_export_csv_uses_club_names_for_leader_scope(r02, monkeypatch):
+    monkeypatch.setattr(finance_service, "totals", lambda *args, **kwargs: {
+        "income_total": Decimal("0"),
+        "expense_total": Decimal("0"),
+        "balance": Decimal("0"),
+        "active_record_count": 0,
+        "voided_record_count": 0,
+    })
+    monkeypatch.setattr(finance_service, "_all_records", lambda *args, **kwargs: [])
+    db = FakeDb()
+    db.scalars_result = ["星河读书社", "晨风运动社"]
+
+    payload, filename = finance_service.export_csv(db, r02)
+
+    assert filename == "finance-records.csv"
+    text = payload.decode("utf-8-sig")
+    assert "星河读书社、晨风运动社" in text
+
+
+def test_export_csv_uses_all_clubs_label_for_r03(r03, monkeypatch):
+    monkeypatch.setattr(finance_service, "totals", lambda *args, **kwargs: {
+        "income_total": Decimal("0"),
+        "expense_total": Decimal("0"),
+        "balance": Decimal("0"),
+        "active_record_count": 0,
+        "voided_record_count": 0,
+    })
+    monkeypatch.setattr(finance_service, "_all_records", lambda *args, **kwargs: [])
+
+    payload, _ = finance_service.export_csv(FakeDb(), r03)
+
+    assert "全部社团" in payload.decode("utf-8-sig")
