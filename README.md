@@ -107,7 +107,7 @@ python -m app.db.seed
 
 ```powershell
 cd backend
-pytest
+pytest --cov=app --cov-report=term-missing
 ruff check .
 
 # 需已启动 uvicorn 且连接 seed 过的 MySQL
