@@ -58,7 +58,7 @@
 
 | 验证项 | 状态 | 实际结果 |
 |---|---|---|
-| Backend pytest | PASS | 95 passed |
+| Backend pytest | PASS | 96 passed（含 OpenAPI 与 API 契约一致性测试） |
 | M01 FR-23 账号管理 | PASS | 账号列表、非 R04 返回 403、创建（自动 R01）、停用/恢复、授予/撤销 R03、授予/撤销社团 R02、R02 缺少 club_id 返回 400 |
 | M02/M03 社团与成员 | PASS | 成员 A 的 `smoke_m02_m03.py` 全部通过 |
 | M04 活动管理 | PASS | 草稿 → 提交 → R03 审核通过 → 发布 → 学生报名 → 取消报名 |
