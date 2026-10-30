@@ -52,7 +52,7 @@ R04 系统管理员维护本地测试账号，并按项目授权规则授予/撤
 | 集成后全量 `pytest` | 95 passed |
 | `ruff check app/api/v1/accounts.py` | 通过 |
 | 前端 `npm run build` | 通过（120 modules） |
-| 真实 MySQL 端到端 | 未执行，见 `ENGINEERING_ISSUES_V0_1.md` EI-04 |
+| 真实 MySQL 端到端 | 通过：账号列表、403、创建、停用/恢复、R03/R02 授予撤销、R02 缺 `club_id` 共 12 项冒烟检查，见 `docs/integration/smoke_m01_m07.py`（2026-10-31） |
 
 ## 5. 已知限制
 

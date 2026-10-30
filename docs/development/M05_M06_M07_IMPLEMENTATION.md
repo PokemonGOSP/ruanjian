@@ -190,12 +190,10 @@ record_audit(
 | 前端依赖安装 | 完成 |
 | 前端构建 | `vite build` 通过，112 modules transformed |
 
-未执行项：
+补充验证（2026-10-31，负责人环境）：
 
-- 真实 MySQL 8 的 Alembic migration、Seed、接口集成验证：当前机器没有 Docker/MySQL，未执行；不得用 SQLite 替代。
-- 浏览器端到端点击验证：未执行；前端已完成生产构建，接口字段与页面绑定已按契约实现。
-
-以上未执行项需在具备 MySQL 的负责人环境补测后再合并到 `main`。
+- 真实 MySQL 8.4.11 的 Alembic migration、Seed、接口集成验证：已执行并通过；M05 经费登记/汇总、M06 通知发布/收件箱/已读、M07 综合统计/CSV 导出/审计日志均在 `docs/integration/smoke_m01_m07.py` 的 26 项冒烟检查中通过。
+- 浏览器端到端点击验证：仍未执行；前端已完成生产构建，接口字段与页面绑定已按契约实现，建议后续按页面补测。
 
 ## 9. 验收对照要点
 
