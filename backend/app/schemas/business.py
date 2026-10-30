@@ -34,6 +34,27 @@ class AccountUpdateRequest(BaseModel):
     status: Literal["NORMAL", "DISABLED"] | None = None
 
 
+class AccountClubAuthorization(BaseModel):
+    club_id: int
+    role_code: Literal["R02"] = "R02"
+
+
+class AccountData(BaseModel):
+    user_id: int
+    username: str
+    display_name: str
+    status: Literal["NORMAL", "DISABLED"]
+    system_roles: list[Literal["R01", "R03", "R04"]]
+    club_authorizations: list[AccountClubAuthorization]
+
+
+class RoleAssignmentData(BaseModel):
+    user_id: int
+    role_code: Literal["R02", "R03", "R04"]
+    club_id: int | None = None
+    active: bool
+
+
 class ActivityCreateRequest(BaseModel):
     """FR-11：R02 创建活动申请。时间字段为不带时区的本地时间，与数据库 DATETIME 一致。"""
 
