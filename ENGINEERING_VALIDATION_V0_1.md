@@ -67,6 +67,8 @@
 | M07 统计与审计 | PASS | 综合统计（社团/成员/活动/报名）、经费 CSV 导出、审计日志查询 |
 | Frontend build | PASS | Vite 构建成功，120 modules transformed |
 
+冒烟脚本已入库：`docs/integration/smoke_m01_m07.py`（M01/M04～M07），M02/M03 见 `docs/member-a/integration/smoke_m02_m03.py`。
+
 ## 6. 最终状态
 
 - `REQUIRES_CR`：不存在。
