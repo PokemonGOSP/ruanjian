@@ -52,7 +52,7 @@
 - 工程问题记录 `EI-xx`；不得用 SQLite 等替代 MySQL。
 - 不把 R02 实现为全局用户角色；必须保留用户—具体 Club 授权关系。
 - 不实现范围外的 SSO、支付、签到、多级审批、外部通知等功能。
-- M02～M04 与 FR-23 当前是 Skeleton；M05～M07 已由成员 C 实现。每项实现必须同时覆盖 API、数据库、权限、测试和文档。
+- M01～M07 与 FR-23 均已实现并通过真实 MySQL 集成验证；后续改动仍须同时覆盖 API、数据库、权限、测试和文档。
 
 ## 4. Git 分支规则
 
@@ -70,6 +70,7 @@ cd backend
 alembic upgrade head
 python -m app.db.seed
 pytest
+python ..\docs\integration\smoke_m01_m07.py   # 需先启动 uvicorn
 cd ..\frontend
 npm.cmd install
 npm.cmd run build

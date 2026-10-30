@@ -108,8 +108,10 @@ python -m app.db.seed
 ```powershell
 cd backend
 pytest
-# 可选静态检查（先执行 pip install ruff）
-ruff check app tests
+ruff check .
+
+# 需已启动 uvicorn 且连接 seed 过的 MySQL
+python ..\docs\integration\smoke_m01_m07.py
 
 cd ..\frontend
 npm.cmd install
