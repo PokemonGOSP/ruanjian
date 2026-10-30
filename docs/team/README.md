@@ -74,6 +74,7 @@ python ..\docs\integration\smoke_m01_m07.py   # 需先启动 uvicorn
 cd ..\frontend
 npm.cmd install
 npm.cmd test
+npm.cmd run test:e2e   # 需后端已启动且数据库已 Seed
 npm.cmd run build
 ```
 

@@ -117,9 +117,13 @@ cd ..\frontend
 npm.cmd install
 npm.cmd test
 npm.cmd run build
+
+# 浏览器端到端：需后端已启动且数据库已 Seed
+npx playwright install chromium
+npm.cmd run test:e2e
 ```
 
-CI：`.github/workflows/ci.yml` 在 push/PR 时执行后端 `ruff check .`、`pytest`，以及前端 `npm ci`、`npm test`、`npm run build`。
+CI：`.github/workflows/ci.yml` 在 push/PR 时执行后端 `ruff check .`、`pytest`，前端 `npm ci`、`npm test`、`npm run build`，并在 MySQL 8.4 service 上启动真实后端执行 Playwright 浏览器测试。
 
 ## 地址
 

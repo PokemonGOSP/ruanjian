@@ -15,6 +15,9 @@ venv/
 frontend/node_modules/
 frontend/dist/
 npm-debug.log*
+frontend/test-results/
+frontend/playwright-report/
+frontend/blob-report/
 
 # Editors and OS
 .idea/

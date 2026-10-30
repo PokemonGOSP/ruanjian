@@ -116,7 +116,8 @@ npm.cmd run build
 
 测试使用内存 Repository / Notifier 替身，不依赖 MySQL，也未把工程配置改为 SQLite。
 2026-10-31 已在 MySQL 8.4.11 上完成 migration、seed 和活动全流程接口联调
-（见 `docs/integration/smoke_m01_m07.py`）；浏览器端到端点击验证未执行。
+（见 `docs/integration/smoke_m01_m07.py`）；Playwright 已覆盖登录、角色可见性与模块导航，
+活动逐项点击流程尚未纳入浏览器自动化。
 
 ## 8. 与现有数据模型的关系
 

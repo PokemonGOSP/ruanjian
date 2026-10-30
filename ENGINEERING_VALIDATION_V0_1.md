@@ -40,6 +40,7 @@
 | `/auth/me`/Dashboard | PASS | auth store 获取真实用户，路由进入 Dashboard 显示当前身份 |
 | Frontend install | PASS | `npm.cmd install`，0 vulnerabilities |
 | Frontend unit tests | PASS | Vitest 5：6 个测试文件、41 个用例（工具函数、认证 store、API 客户端、请求封装、路由守卫） |
+| Frontend browser E2E | PASS | Playwright 5：匿名跳转、错误登录、学生登录/全模块导航/退出、管理员账号与审计、负责人经费与活动入口 |
 | Frontend build | PASS | Vite 7.3.7，120 modules transformed |
 | Frontend ↔ Backend auth chain | PASS | 配置、API client、token storage、`/auth/me` 与 Dashboard 链路一致 |
 
@@ -68,6 +69,7 @@
 | M06 通知 | PASS | 管理通知发布、学生收件箱、标记已读 |
 | M07 统计与审计 | PASS | 综合统计（社团/成员/活动/报名）、经费 CSV 导出、审计日志查询 |
 | Frontend unit tests | PASS | `npm test`：6 个测试文件、41 个用例全部通过 |
+| Frontend browser E2E | PASS | `npm run test:e2e`：Playwright 5 个用例在真实 MySQL + 后端 + 浏览器上全部通过 |
 | Frontend build | PASS | Vite 构建成功，120 modules transformed |
 | Ruff | PASS | `ruff check .` 全量通过，无欠账 |
 
