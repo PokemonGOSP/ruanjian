@@ -102,6 +102,12 @@ jobs:
       - name: Browser end-to-end tests
         working-directory: frontend
         run: npm run test:e2e
+      - name: API smoke M01/M04-M07
+        working-directory: backend
+        run: python ../docs/integration/smoke_m01_m07.py
+      - name: API smoke M02/M03
+        working-directory: backend
+        run: python ../docs/member-a/integration/smoke_m02_m03.py
       - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@v4
