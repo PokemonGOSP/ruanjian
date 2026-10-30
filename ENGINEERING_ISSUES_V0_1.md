@@ -30,21 +30,36 @@
 - 处理：使用 `backend/.venv`（Python 3.12.6，pytest 8.4.2，ruff 0.17.2）执行验证。
 - 验证（2026-10-30）：
   - `pytest tests/test_accounts.py -q`：15 passed（覆盖 6 个 FR-23 endpoint 的正向/权限/异常路径）。
-  - 合并 `main`（M04）后完整 `pytest`：30 passed。
-  - `ruff check app/api/v1/accounts.py`：仅 1 项 F401 未使用导入，已修复；`app/db/seed.py`、`app/db/models/domain.py`、`tests/test_auth.py` 的 lint 欠账为 main 既有问题，另行处理。
+  - 集成 M04 后完整 `pytest`：30 passed；集成 M02/M03 后：71 passed。
+  - `ruff check app/api/v1/accounts.py`：仅 1 项 F401 未使用导入，已修复；`app/db/seed.py`、`app/db/models/domain.py`、`tests/test_auth.py` 的 lint 欠账为既有问题，另行处理。
 - REQUIRES_CR：否。该问题不改变角色、FR、接口语义或数据模型。
 
-## EI-04：本机 Docker Hub 不可达，M04 真实 MySQL 集成验证待执行
+## EI-04：本机 Docker Hub 不可达、缺少 MySQL，M04～M07 真实数据库集成验证待执行
 
 - 类型：环境/网络问题
 - 状态：`OPEN`
-- 发现时间：2026-10-28
-- 现象：`docker images` 为空；`docker pull mysql:8.4` 访问 `registry-1.docker.io:443` 超时，无法准备 MySQL 8 容器；本机未安装 MySQL 服务。
-- 影响：M04 的 Service/状态机/权限/通知由 11 个 pytest 用例覆盖（内存 Repository 替身），SQL 已按 MySQL 方言编译检查；但 migration + seed + 真实 DB 的端到端联调未在本机执行。
-- 处理建议：在具备 MySQL 8 或可拉取镜像的环境执行 `docker compose up -d mysql`、`alembic upgrade head`、`python -m app.db.seed`，再按 `docs/development/M04_ACTIVITY.md` 第 7 节复验。
+- 发现时间：2026-10-28（成员 B 记录 M04 部分，成员 C 补充 M05/M06/M07 部分，集成时合并）
+- 现象：`docker images` 为空；`docker pull mysql:8.4` 访问 `registry-1.docker.io:443` 超时；本机未安装 MySQL 服务，无法执行 `alembic upgrade head`、`python -m app.db.seed` 和真实接口联调。
+- 影响：
+  - M04：Service/状态机/权限/通知由 11 个 pytest 用例覆盖（内存 Repository 替身），SQL 已按 MySQL 方言编译检查。
+  - M05/M06/M07：成员 C 与既有单元/接口测试通过；OpenAPI 生成和前端构建通过。
+  - 三个模块的真实 migration + seed + DB 端到端联调均未在本机执行。
+- 处理建议：在具备 MySQL 8 或可拉取镜像的环境执行 `docker compose up -d mysql`、`alembic upgrade head`、`python -m app.db.seed`，再按 `docs/development/M04_ACTIVITY.md` 第 7 节及各模块实现文档复验。
+- REQUIRES_CR：否。
+
+## EI-05：请求参数校验错误响应无法序列化
+
+- 类型：公共异常处理缺陷
+- 状态：`RESOLVED`
+- 发现时间：2026-10-27（成员 C）
+- 现象：`RequestValidationError.errors()` 的 `ctx` 中可能包含 `ValueError` 或 `Decimal`，原 `JSONResponse` 直接序列化时抛 `TypeError`，导致本应返回 422/40001 的请求变成 500。
+- 触发场景：成员 C 的经费金额校验（如 `amount=0`）、自定义 Pydantic validator 失败时。
+- 处理：在 `app/core/exceptions.py` 中移除不可序列化的 `ctx`，并使用 `jsonable_encoder` 编码错误数据；响应结构仍为 `{code,message,data}`，错误码不变。
+- 影响：所有模块的参数校验错误响应；按公共异常处理变更规则由负责人复核。
+- 复核结论（2026-10-30）：变更仅影响错误响应序列化，不改变响应结构、错误码或权限语义；合并后相关测试通过。
 - REQUIRES_CR：否。
 
 ## 结论
 
 - 未发现需求层矛盾，不存在 `REQUIRES_CR`。
-- EI-01、EI-02、EI-03 已解除；EI-04 为当前机器 Docker 网络限制，需在具备 MySQL 8 的环境补做 M04 端到端集成验证。
+- EI-01、EI-02、EI-03、EI-05 已解除；EI-04 为当前机器 Docker/网络限制，需在具备 MySQL 8 的环境补做 M04～M07 端到端集成验证。

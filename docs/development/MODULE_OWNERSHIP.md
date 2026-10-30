@@ -5,9 +5,9 @@
 | Owner | 模块 | 工程职责 | V0.1 状态 |
 |---|---|---|---|
 | Leader / Integration | M01、公共层 | Engineering Skeleton、身份权限骨架、整体数据模型、API Contract、异常响应、Migration、Seed、集成与 CR | health/auth/me 已实现；FR-23 账号与角色授权 6 个 endpoint 已实现（15 个测试通过，EI-03 已解除）；AccountsView 仍为占位页 |
-| Member A | M02、M03 | 社团注册与年审、成员管理 | `TODO(Member A)`；契约和路由 skeleton 已预留 |
+| Member A | M02、M03 | 社团注册与年审、成员管理 | 已实现 FR-03～FR-10 及 M07-A 社团/成员统计（Service/Repository/权限/测试/UI），见 `docs/member-a/` |
 | Member B | M04 | 活动管理 | 已实现 FR-11～FR-16（Service/状态机/报名/通知/测试/UI），见 `M04_ACTIVITY.md` |
-| Member C | M05、M06、M07 | 经费、通知、统计与审计 | `TODO(Member C)`；契约和路由 skeleton 已预留 |
+| Member C | M05、M06、M07 | 经费、通知、统计与审计 | 已实现 M05/M06/M07 API、权限、测试和前端，见 `M05_M06_M07_IMPLEMENTATION.md`；真实 MySQL 集成验证待负责人环境执行（EI-04） |
 
 ## 协作规则
 
@@ -23,5 +23,5 @@
 
 - `backend/app/api/v1/clubs.py`、`annual_reviews.py`、`members.py`：TODO(Member A)
 - `backend/app/api/v1/activities.py`：TODO(Member B)
-- `backend/app/api/v1/finance.py`、`notifications.py`、`reports.py`：TODO(Member C)
-- `frontend/src/views/*View.vue`：对应模块的最小占位页
+- `backend/app/api/v1/finance.py`、`notifications.py`、`reports.py`：已由成员 C 实现，领域规则见 `M05_M06_M07_IMPLEMENTATION.md`
+- `frontend/src/views/*View.vue`：M05/M06/M07 页面已实现；M02～M04、FR-23 仍为对应模块 owner 的占位页

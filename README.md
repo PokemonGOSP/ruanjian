@@ -1,6 +1,6 @@
 # 高校社团活动管理系统 — Engineering Skeleton V0.1
 
-基于 `REQUIREMENTS_BASELINE_V1_1.md` 的课程工程。当前已完整跑通本地测试账号登录、JWT、`/auth/me`、前端认证状态，以及 M04 活动管理（FR-11～FR-16：申报、审核、发布、报名、取消/归档）；M02、M03、M05～M07 只提供 Schema、API Contract、路由和页面占位。
+基于 `REQUIREMENTS_BASELINE_V1_1.md` 的课程工程。已跑通本地测试账号登录、JWT、`/auth/me` 和前端认证状态，并实现 M01 账号与角色授权（FR-23）、M02/M03 社团与成员管理（FR-03～FR-10）、M04 活动管理（FR-11～FR-16）、M05 经费（FR-17～FR-18）、M06 通知（FR-19～FR-20）、M07 统计与审计（FR-21～FR-22，含 M07-A 社团/成员统计）。真实 MySQL 端到端联调待执行（EI-04）；M01 账号管理页面仍为占位页。
 
 ## 技术栈
 
@@ -136,16 +136,21 @@ npm.cmd run build
 
 ## 当前实现范围
 
-已实现：health、login、logout、me、统一异常/响应、JWT/PBKDF2、SQLAlchemy 模型、Alembic、Seed、前端登录与 Dashboard 认证状态；M04 活动管理（FR-11～FR-16）的 Service/状态转换、资源级权限、报名/取消/取消活动站内通知、自动化测试和前端页面。
+已实现：health、login、logout、me、统一异常/响应、JWT/PBKDF2、SQLAlchemy 模型、Alembic、Seed、前端登录与 Dashboard 认证状态。
 
-Skeleton（HTTP 501）：M02/M03、M05/M06/M07 业务，以及 FR-23 账号授权管理。路由契约见 `docs/api/API_CONTRACT_V0_1.md`。
+- M01（FR-23）：账号与角色授权 6 个 endpoint（列表、创建、启停、授予 R02/R03/R04、撤销系统角色、撤销社团 R02）；
+- M02/M03（FR-03～FR-10）：社团注册与年审、入团/退出申请处理、成员名册与职务；
+- M04（FR-11～FR-16）：活动申报、审核、发布、报名、取消/归档，含状态机与站内通知；
+- M05（FR-17～FR-18）：经费记录登记、修改、作废、查询与汇总；
+- M06（FR-19～FR-20）：站内通知列表、已读和管理通知发布；
+- M07：社团/成员统计（M07-A）、活动/报名统计（M07-B）、综合统计、经费 CSV 导出和 R04 审计日志查询（FR-21、FR-22）。
 
-M04 的状态机、业务规则、通知事件和验证结果见 `docs/development/M04_ACTIVITY.md`。
+各模块实现说明见 `docs/development/M04_ACTIVITY.md`、`docs/development/M05_M06_M07_IMPLEMENTATION.md` 和 `docs/member-a/`。路由契约见 `docs/api/API_CONTRACT_V0_1.md`。
 
 ## 当前 TODO
 
-- TODO(Member A)：M02/M03 Service、Repository、领域 Schema、测试和 UI。
-- TODO(Member C)：M05/M06/M07 查询、通知、报表/审计、测试和 UI。
-- TODO(Leader/Integration)：实现 FR-23，审查公共契约变更，持续集成。
+- 在具备 MySQL 8 的环境执行真实 migration、Seed 和 M04～M07 端到端联调（EI-04）。
+- M01 的账号管理页面（`frontend/src/views/AccountsView.vue`）仍为占位页，待补齐。
+- 清理 `app/db/seed.py`、`app/db/models/domain.py`、`tests/test_auth.py` 的既有 ruff 欠账。
 
 环境实测结果见 `ENGINEERING_VALIDATION_V0_1.md`；环境或需求问题见 `ENGINEERING_ISSUES_V0_1.md`。

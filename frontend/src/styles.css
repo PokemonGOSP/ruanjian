@@ -6,7 +6,7 @@
 
 * { box-sizing: border-box; }
 body { margin: 0; }
-button, input { font: inherit; }
+button, input, select, textarea { font: inherit; }
 a { color: inherit; text-decoration: none; }
 
 .card {
@@ -14,4 +14,96 @@ a { color: inherit; text-decoration: none; }
   border: 1px solid #e5e7eb;
   border-radius: 10px;
   padding: 1.25rem;
+}
+
+.muted { color: #6b7280; font-size: 0.9rem; }
+.message { margin: 0.6rem 0; }
+.message.error { color: #b91c1c; }
+.message.ok { color: #047857; }
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+.stat {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.75rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #f9fafb;
+}
+.stat span { color: #6b7280; font-size: 0.85rem; }
+.stat strong { font-size: 1.15rem; }
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.75rem;
+  font-size: 0.9rem;
+}
+.data-table th,
+.data-table td {
+  padding: 0.55rem 0.45rem;
+  border-bottom: 1px solid #e5e7eb;
+  text-align: left;
+  vertical-align: top;
+}
+.data-table th { background: #f9fafb; font-weight: 600; }
+
+.filters,
+.form-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-end;
+  margin: 0.75rem 0;
+}
+.form-grid label,
+.filters label {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+  color: #374151;
+}
+.form-grid input,
+.form-grid select,
+.form-grid textarea,
+.filters input,
+.filters select {
+  padding: 0.45rem 0.55rem;
+  border: 1px solid #9ca3af;
+  border-radius: 6px;
+  background: white;
+}
+
+.btn {
+  padding: 0.45rem 0.8rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: white;
+  cursor: pointer;
+}
+.btn.primary { background: #1d4ed8; color: white; border-color: #1d4ed8; }
+.btn.danger { color: #b91c1c; border-color: #fca5a5; }
+.btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.badge {
+  display: inline-block;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  background: #e5e7eb;
+}
+.badge.ok { background: #d1fae5; color: #065f46; }
+.badge.warn { background: #fef3c7; color: #92400e; }
+.badge.danger { background: #fee2e2; color: #991b1b; }
+
+.pager {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-top: 0.75rem;
 }
