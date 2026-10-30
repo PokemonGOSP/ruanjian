@@ -13,15 +13,16 @@
 
 1. 所有人从 `REQUIREMENTS_BASELINE_V1_1.md` 和 `API_CONTRACT_V0_1.md` 开始，不等待其他业务模块先完成。
 2. 不私自改变 R/M/FR 编号、路由 method、资源归属或状态名称。
-3. M02～M07 的 skeleton 返回 501 是有意设计；owner 在实现时替换对应 handler 和 `PayloadRequest`。
+3. M01～M07 已全部实现，不再返回 501；新增或修改 endpoint 时沿用既有响应封装和权限依赖。
 4. R02 权限必须检查 `club_role_assignments` 的目标 `club_id`，不得改成全局 `users.role`。
 5. R03 不增加学院/部门/辖区过滤；R04 不进入业务审核。
 6. 公共响应、异常、认证或数据库结构变更先由 Leader / Integration 审查。
 7. 需求矛盾写入 `ENGINEERING_ISSUES_V0_1.md`；需要改需求时标记 `REQUIRES_CR`。
 
-## TODO 定位
+## 代码定位
 
-- `backend/app/api/v1/clubs.py`、`annual_reviews.py`、`members.py`：TODO(Member A)
-- `backend/app/api/v1/activities.py`：TODO(Member B)
-- `backend/app/api/v1/finance.py`、`notifications.py`、`reports.py`：已由成员 C 实现，领域规则见 `M05_M06_M07_IMPLEMENTATION.md`
-- `frontend/src/views/*View.vue`：M05/M06/M07 页面已实现；M02～M04、FR-23 仍为对应模块 owner 的占位页
+- M01 / FR-23：`backend/app/api/v1/accounts.py`、`auth.py`；`frontend/src/views/AccountsView.vue`
+- M02/M03：`backend/app/api/v1/clubs.py`、`annual_reviews.py`、`members.py`；页面 `ClubsView.vue`、`MembersView.vue`
+- M04：`backend/app/api/v1/activities.py`；页面 `ActivitiesView.vue`
+- M05/M06/M07：`backend/app/api/v1/finance.py`、`notifications.py`、`reports.py`；页面 `FinanceView.vue`、`NotificationsView.vue`、`ReportsView.vue`
+- 领域规则见 `M01_ACCOUNTS.md`、`M04_ACTIVITY.md`、`M05_M06_M07_IMPLEMENTATION.md` 和 `docs/member-a/`
