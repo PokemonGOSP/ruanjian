@@ -115,10 +115,11 @@ python ..\docs\integration\smoke_m01_m07.py
 
 cd ..\frontend
 npm.cmd install
+npm.cmd test
 npm.cmd run build
 ```
 
-CI：`.github/workflows/ci.yml` 在 push/PR 时执行后端 `ruff check .`、`pytest` 和前端 `npm ci && npm run build`。
+CI：`.github/workflows/ci.yml` 在 push/PR 时执行后端 `ruff check .`、`pytest`，以及前端 `npm ci`、`npm test`、`npm run build`。
 
 ## 地址
 

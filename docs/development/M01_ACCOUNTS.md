@@ -51,10 +51,11 @@ R04 系统管理员维护本地测试账号，并按项目授权规则授予/撤
 | `pytest tests/test_accounts.py` | 15 passed（正向/权限/冲突/404） |
 | 集成后全量 `pytest` | 134 passed（含契约一致性、异常响应、M05～M07 service 测试） |
 | `ruff check app/api/v1/accounts.py` | 通过 |
+| 前端 `npm test` | 通过（Vitest：工具函数、认证 store、API 客户端与路由守卫，41 个用例） |
 | 前端 `npm run build` | 通过（120 modules） |
 | 真实 MySQL 端到端 | 通过：账号列表、403、创建、停用/恢复、R03/R02 授予撤销、R02 缺 `club_id` 共 12 项冒烟检查，见 `docs/integration/smoke_m01_m07.py`（2026-10-31） |
 
 ## 5. 已知限制
 
-- 没有前端自动化测试，页面以构建通过和后端契约测试保障。
-- 真实数据库 migration + seed + 接口联调已于 2026-10-31 完成；仅浏览器端到端点击验证未执行。
+- 前端已有 Vitest 单元测试覆盖认证 store、API 客户端、路由守卫和工具函数；页面交互仍以生产构建和后端契约测试保障。
+- 真实数据库 migration + seed + 接口联调已于 2026-10-31 完成；浏览器端到端点击验证尚未执行。

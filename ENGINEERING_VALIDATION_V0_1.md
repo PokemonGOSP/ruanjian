@@ -39,7 +39,8 @@
 | Login/token storage | PASS | LoginView 调用真实 `/auth/login`，Pinia 使用 localStorage 保存 token |
 | `/auth/me`/Dashboard | PASS | auth store 获取真实用户，路由进入 Dashboard 显示当前身份 |
 | Frontend install | PASS | `npm.cmd install`，0 vulnerabilities |
-| Frontend build | PASS | Vite 7.3.6，105 modules transformed |
+| Frontend unit tests | PASS | Vitest 5：6 个测试文件、41 个用例（工具函数、认证 store、API 客户端、请求封装、路由守卫） |
+| Frontend build | PASS | Vite 7.3.7，120 modules transformed |
 | Frontend ↔ Backend auth chain | PASS | 配置、API client、token storage、`/auth/me` 与 Dashboard 链路一致 |
 
 ## 4. Skeleton 一致性
@@ -66,6 +67,7 @@
 | M05 经费 | PASS | 登记支出、按社团汇总 |
 | M06 通知 | PASS | 管理通知发布、学生收件箱、标记已读 |
 | M07 统计与审计 | PASS | 综合统计（社团/成员/活动/报名）、经费 CSV 导出、审计日志查询 |
+| Frontend unit tests | PASS | `npm test`：6 个测试文件、41 个用例全部通过 |
 | Frontend build | PASS | Vite 构建成功，120 modules transformed |
 | Ruff | PASS | `ruff check .` 全量通过，无欠账 |
 

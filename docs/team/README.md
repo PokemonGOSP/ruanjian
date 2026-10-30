@@ -69,10 +69,11 @@ docker compose up -d mysql
 cd backend
 alembic upgrade head
 python -m app.db.seed
-pytest
+pytest --cov=app
 python ..\docs\integration\smoke_m01_m07.py   # 需先启动 uvicorn
 cd ..\frontend
 npm.cmd install
+npm.cmd test
 npm.cmd run build
 ```
 
