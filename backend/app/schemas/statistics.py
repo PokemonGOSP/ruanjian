@@ -1,7 +1,7 @@
 """M07-A 社团/成员统计的响应 Schema。
 
 M07-A 只提供查询服务，不新增公共 URL；由 M07 的 `/reports/summary` 组合返回，
-详见 `docs/M07A_CLUB_MEMBER_STATISTICS.md`。
+详见 `docs/member-a/docs/M07A_CLUB_MEMBER_STATISTICS.md`。
 """
 
 from datetime import datetime

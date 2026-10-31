@@ -96,6 +96,7 @@ a { color: inherit; text-decoration: none; }
   border-radius: 999px;
   font-size: 0.78rem;
   background: #e5e7eb;
+  white-space: nowrap;
 }
 .badge.ok { background: #d1fae5; color: #065f46; }
 .badge.warn { background: #fef3c7; color: #92400e; }

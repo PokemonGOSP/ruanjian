@@ -75,7 +75,20 @@
 
 冒烟脚本已入库：`docs/integration/smoke_m01_m07.py`（M01/M04～M07），M02/M03 见 `docs/member-a/integration/smoke_m02_m03.py`。
 
-## 6. 最终状态
+## 6. 交付前收尾（2026-10-31）
+
+| 收尾项 | 状态 | 实际结果 |
+|---|---|---|
+| 首页工作台 | DONE | 首页由骨架占位改为身份卡 + 数据概览 + 角色化快捷入口；R02 按“用户—社团”授权识别，R01 不显示统计 |
+| 侧边栏高亮 | DONE | `/` 为父路由导致的双重高亮改为 `router-link-exact-active`，同一时刻只高亮当前菜单 |
+| 页头身份显示 | DONE | 由原始角色码（R01）改为中文角色名，并补充“社团负责人”资源级身份 |
+| 账号表格排版 | DONE | 状态/显示名称/操作列单行显示，撤销按钮不再折行 |
+| API 契约同步 | DONE | 21 处 `skeleton` 全部更新为 `implemented`（共 56 个路由），9 处 `PayloadRequest` 占位替换为领域 schema 名称 |
+| 成员 A 文档 | DONE | `docs/member-a/README.md` 分支说明由“待合并”改为“已合并到 main” |
+| Schema 文档路径 | DONE | `backend/app/schemas/statistics.py` 的 docstring 指向不存在的 `docs/M07A_CLUB_MEMBER_STATISTICS.md`，已修正为 `docs/member-a/docs/M07A_CLUB_MEMBER_STATISTICS.md` |
+| 演示数据 | DONE | 重建 MySQL 数据卷后重新 migration + Seed，账号恢复为 6 个种子账号，无冒烟脚本残留 |
+
+## 7. 最终状态
 
 - `REQUIRES_CR`：不存在。
 - EI-01～EI-05 已全部解除，详见 `ENGINEERING_ISSUES_V0_1.md`。

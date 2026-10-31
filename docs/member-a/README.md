@@ -1,6 +1,6 @@
 # 成员 A 交付物：M02 / M03 / M07-A
 
-> 本目录是成员 A 的实现、测试与文档，**已提交到分支 `feature/m02-m03-club-member`；`main` 未直接修改**。
+> 本目录是成员 A 的实现、测试与文档，**已合并到 `main`**（历史开发分支为 `feature/m02-m03-club-member`）。
 > 代码合并位置见 [`docs/INTEGRATION_GUIDE.md`](docs/INTEGRATION_GUIDE.md)，该指南同时保留作为复盘记录。
 
 ## 1. 任务范围
@@ -33,7 +33,7 @@
 │  │  ├─ api/v1/members.py             # 替换 Skeleton
 │  │  ├─ schemas/club.py               # 新增
 │  │  ├─ schemas/member.py             # 新增
-│  │  ├─ schemas/statistics.py         # 新增
+│  │  ├─ schemas/statistics.py         # 新增（M07-A 响应 Schema）
 │  │  ├─ repositories/club_repository.py
 │  │  ├─ repositories/member_repository.py
 │  │  ├─ services/club_service.py
@@ -102,4 +102,4 @@ Chrome 156 + Playwright         9 步浏览器流程 PASS，9 张截图
 - 未实现活动、经费、通知中心、审计查询、账号授权等其他人负责的模块。
 - 未实现签到、支付、报销、外部通知、多级审批、SSO 等范围外能力。
 - 未在 Docker Desktop / 容器中运行 MySQL；本机无管理员权限和 WSL2，改用同版本便携 MySQL 8.4.11 完成真实联调。
-- 已提交到 `feature/m02-m03-club-member` 分支；`main` 未直接修改；验证环境未提交。
+- 已合并到 `main`（历史开发分支 `feature/m02-m03-club-member`）；验证环境未提交。

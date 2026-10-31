@@ -8,8 +8,8 @@
 - 失败：`{"code":<error_code>,"message":"具体原因","data":null}`。
 - 分页：`page` 从 1 开始，`page_size` 为 1～100；响应 `data={items,page,page_size,total}`。
 - R02 是目标 `club_id` 的资源级授权，不是全局角色；R03 可按既有 FR 访问系统内全部社团业务记录；R04 不参与业务审核。
-- `PayloadRequest` 是 V0.1 占位 schema，成员实现时必须在不改变路径语义的前提下替换为领域 schema。
-- Skeleton 路由统一返回 HTTP 501 / code 50101；已实现路由见表中 `implemented`。
+- 请求体与响应体字段以 `backend/app/schemas/` 中的领域 schema 为准；本表 `Request` / `Response data` 列给出主要 schema 名称。
+- 截至 2026-10-31，全部 56 个路由均为 `implemented`，不存在返回 HTTP 501 / code 50101 的 Skeleton 路由。
 
 主要响应 schema：`TokenData`、`CurrentUserData`、`PageData<T>`、`Resource`（对应领域资源）、`EmptyObject`。主要请求 schema：`LoginRequest`、`AccountCreateRequest`、`AccountUpdateRequest`、`RoleAssignmentRequest`、`ReviewRequest`、`ReasonRequest`、`ActivityCreateRequest`、`FinanceRecordCreateRequest`、`FinanceRecordUpdateRequest`、`ManagementNotificationRequest`。
 
@@ -41,15 +41,15 @@ FR-02 是所有受保护 endpoint 的横切权限需求：后续实现必须同�
 
 | Method | Endpoint | FR | 角色/资源归属 | Request | Response data | 状态要求 | 主要错误 | 实现状态 |
 |---|---|---|---|---|---|---|---|---|
-| POST | `/club-registration-applications` | FR-03 | R01 本人 | PayloadRequest | ClubRegistrationApplication | 新建为草稿 | 40001,40101 | skeleton |
-| GET | `/club-registration-applications` | FR-03,FR-05 | R01 本人或 R03 全部 | page,page_size | PageData<Application> | 无 | 40301 | skeleton |
-| PATCH | `/club-registration-applications/{application_id}` | FR-03 | R01 申请本人 | PayloadRequest | Application | 草稿/已撤回可编辑 | 40301,40401,40901 | skeleton |
-| POST | `/club-registration-applications/{application_id}/submit` | FR-03 | R01 申请本人 | 无 | Application | 草稿/已撤回 → 待审核 | 40301,40901 | skeleton |
-| POST | `/club-registration-applications/{application_id}/withdraw` | FR-03 | R01 申请本人 | 无 | Application | 待审核 → 已撤回 | 40301,40901 | skeleton |
-| POST | `/club-registration-applications/{application_id}/review` | FR-05 | R03 | ReviewRequest | Application/Club/R02 grant | 待审核 → 已通过/已驳回 | 40301,40901 | skeleton |
-| GET | `/clubs` | FR-04 | 登录用户按既有权限 | page,page_size | PageData<Club> | 无 | 40101 | skeleton |
-| GET | `/clubs/{club_id}` | FR-04 | 登录用户按既有权限 | 无 | Club | 社团存在 | 40401 | skeleton |
-| PATCH | `/clubs/{club_id}` | FR-04 | 目标社团 R02 | PayloadRequest | Club | 社团存在 | 40302,40401 | skeleton |
+| POST | `/club-registration-applications` | FR-03 | R01 本人 | ClubRegistrationCreateRequest | ClubRegistrationApplication | 新建为草稿 | 40001,40101 | implemented |
+| GET | `/club-registration-applications` | FR-03,FR-05 | R01 本人或 R03 全部 | page,page_size | PageData<Application> | 无 | 40301 | implemented |
+| PATCH | `/club-registration-applications/{application_id}` | FR-03 | R01 申请本人 | ClubRegistrationUpdateRequest | Application | 草稿/已撤回可编辑 | 40301,40401,40901 | implemented |
+| POST | `/club-registration-applications/{application_id}/submit` | FR-03 | R01 申请本人 | 无 | Application | 草稿/已撤回 → 待审核 | 40301,40901 | implemented |
+| POST | `/club-registration-applications/{application_id}/withdraw` | FR-03 | R01 申请本人 | 无 | Application | 待审核 → 已撤回 | 40301,40901 | implemented |
+| POST | `/club-registration-applications/{application_id}/review` | FR-05 | R03 | ReviewRequest | Application/Club/R02 grant | 待审核 → 已通过/已驳回 | 40301,40901 | implemented |
+| GET | `/clubs` | FR-04 | 登录用户按既有权限 | page,page_size | PageData<Club> | 无 | 40101 | implemented |
+| GET | `/clubs/{club_id}` | FR-04 | 登录用户按既有权限 | 无 | Club | 社团存在 | 40401 | implemented |
+| PATCH | `/clubs/{club_id}` | FR-04 | 目标社团 R02 | ClubUpdateRequest | Club | 社团存在 | 40302,40401 | implemented |
 
 注册通过必须在一个事务中创建 Club 并授予申请人该 Club 的 R02；驳回不得创建获准 Club 或授权。
 
@@ -57,12 +57,12 @@ FR-02 是所有受保护 endpoint 的横切权限需求：后续实现必须同�
 
 | Method | Endpoint | FR | 角色/资源归属 | Request | Response data | 状态要求 | 主要错误 | 实现状态 |
 |---|---|---|---|---|---|---|---|---|
-| POST | `/annual-reviews` | FR-06 | 目标社团 R02 | PayloadRequest | AnnualReviewApplication | 新建为草稿 | 40302,40902 | skeleton |
-| GET | `/annual-reviews` | FR-06,FR-07 | R02 本社团或 R03 全部 | page,page_size | PageData<Application> | 无 | 40301,40302 | skeleton |
-| PATCH | `/annual-reviews/{application_id}` | FR-06 | 目标社团 R02 | PayloadRequest | Application | 草稿/已撤回可编辑 | 40302,40901 | skeleton |
-| POST | `/annual-reviews/{application_id}/submit` | FR-06 | 目标社团 R02 | 无 | Application | 草稿/已撤回 → 待审核 | 40302,40901 | skeleton |
-| POST | `/annual-reviews/{application_id}/withdraw` | FR-06 | 提交社团 R02 | 无 | Application | 待审核 → 已撤回 | 40302,40901 | skeleton |
-| POST | `/annual-reviews/{application_id}/review` | FR-07 | R03 | ReviewRequest | Application | 待审核 → 已通过/已驳回 | 40301,40901 | skeleton |
+| POST | `/annual-reviews` | FR-06 | 目标社团 R02 | AnnualReviewCreateRequest | AnnualReviewApplication | 新建为草稿 | 40302,40902 | implemented |
+| GET | `/annual-reviews` | FR-06,FR-07 | R02 本社团或 R03 全部 | page,page_size | PageData<Application> | 无 | 40301,40302 | implemented |
+| PATCH | `/annual-reviews/{application_id}` | FR-06 | 目标社团 R02 | AnnualReviewUpdateRequest | Application | 草稿/已撤回可编辑 | 40302,40901 | implemented |
+| POST | `/annual-reviews/{application_id}/submit` | FR-06 | 目标社团 R02 | 无 | Application | 草稿/已撤回 → 待审核 | 40302,40901 | implemented |
+| POST | `/annual-reviews/{application_id}/withdraw` | FR-06 | 提交社团 R02 | 无 | Application | 待审核 → 已撤回 | 40302,40901 | implemented |
+| POST | `/annual-reviews/{application_id}/review` | FR-07 | R03 | ReviewRequest | Application | 待审核 → 已通过/已驳回 | 40301,40901 | implemented |
 
 驳回只保存状态/意见并触发 FR-19 通知，不冻结社团或限制其他业务。
 
@@ -70,12 +70,12 @@ FR-02 是所有受保护 endpoint 的横切权限需求：后续实现必须同�
 
 | Method | Endpoint | FR | 角色/资源归属 | Request | Response data | 状态要求 | 主要错误 | 实现状态 |
 |---|---|---|---|---|---|---|---|---|
-| POST | `/membership-applications` | FR-08 | R01 本人 | PayloadRequest | MembershipApplication | 目标关系满足申请类型 | 40002,40902 | skeleton |
-| GET | `/membership-applications` | FR-08,FR-09 | R01 本人或目标社团 R02 | page,page_size | PageData<Application> | 无 | 40302 | skeleton |
-| POST | `/membership-applications/{application_id}/withdraw` | FR-08 | R01 申请本人 | 无 | Application | 待处理 → 已撤回 | 40301,40901 | skeleton |
-| POST | `/membership-applications/{application_id}/process` | FR-09 | 目标社团 R02 | ReviewRequest | Application/Member | 待处理 → 已同意/已驳回 | 40302,40901 | skeleton |
-| GET | `/clubs/{club_id}/members` | FR-10 | 目标社团 R02；成员按允许范围 | page,page_size | PageData<ClubMember> | 无 | 40302,40401 | skeleton |
-| PATCH | `/clubs/{club_id}/members/{member_id}` | FR-10 | 目标社团 R02 | PayloadRequest | ClubMember | 有效成员 | 40302,40401,40901 | skeleton |
+| POST | `/membership-applications` | FR-08 | R01 本人 | MembershipApplicationCreateRequest | MembershipApplication | 目标关系满足申请类型 | 40002,40902 | implemented |
+| GET | `/membership-applications` | FR-08,FR-09 | R01 本人或目标社团 R02 | page,page_size | PageData<Application> | 无 | 40302 | implemented |
+| POST | `/membership-applications/{application_id}/withdraw` | FR-08 | R01 申请本人 | 无 | Application | 待处理 → 已撤回 | 40301,40901 | implemented |
+| POST | `/membership-applications/{application_id}/process` | FR-09 | 目标社团 R02 | ReviewRequest | Application/Member | 待处理 → 已同意/已驳回 | 40302,40901 | implemented |
+| GET | `/clubs/{club_id}/members` | FR-10 | 目标社团 R02；成员按允许范围 | page,page_size | PageData<ClubMember> | 无 | 40302,40401 | implemented |
+| PATCH | `/clubs/{club_id}/members/{member_id}` | FR-10 | 目标社团 R02 | ClubMemberUpdateRequest | ClubMember | 有效成员 | 40302,40401,40901 | implemented |
 
 ## 7. Activities（M04）
 
@@ -84,7 +84,7 @@ FR-02 是所有受保护 endpoint 的横切权限需求：后续实现必须同�
 | POST | `/activities` | FR-11 | 目标社团 R02 | ActivityCreateRequest | Activity | 新建审核状态草稿 | 40302,40001 | implemented |
 | GET | `/activities` | FR-14 | 登录用户按可见范围 | page,page_size | PageData<Activity> | 无 | 40101 | implemented |
 | GET | `/activities/{activity_id}` | FR-14 | 登录用户按可见范围 | 无 | Activity | 活动存在 | 40401 | implemented |
-| PATCH | `/activities/{activity_id}` | FR-11 | 目标社团 R02 | PayloadRequest | Activity | 审核状态草稿/已撤回 | 40302,40901 | implemented |
+| PATCH | `/activities/{activity_id}` | FR-11 | 目标社团 R02 | ActivityUpdateRequest | Activity | 审核状态草稿/已撤回 | 40302,40901 | implemented |
 | POST | `/activities/{activity_id}/submit` | FR-12 | 目标社团 R02 | 无 | Activity | 草稿/已撤回 → 待审核 | 40302,40901 | implemented |
 | POST | `/activities/{activity_id}/withdraw` | FR-12 | 提交社团 R02 | 无 | Activity | 待审核 → 已撤回 | 40302,40901 | implemented |
 | POST | `/activities/{activity_id}/review` | FR-13 | R03 | ReviewRequest | Activity | 待审核 → 已通过/已驳回 | 40301,40901 | implemented |
@@ -93,7 +93,7 @@ FR-02 是所有受保护 endpoint 的横切权限需求：后续实现必须同�
 | DELETE | `/activities/{activity_id}/registrations/me` | FR-15 | R01 报名本人 | 无 | EmptyObject | 已报名且允许取消 | 40401,40901 | implemented |
 | GET | `/activities/{activity_id}/registrations` | FR-15 | 目标社团 R02 | page,page_size | PageData<Registration> | 活动存在 | 40302,40401 | implemented |
 | POST | `/activities/{activity_id}/cancel` | FR-16 | 目标社团 R02 | ReasonRequest | Activity | 执行阶段且非已结束/已取消 → 已取消 | 40302,40901 | implemented |
-| POST | `/activities/{activity_id}/end` | FR-16 | 目标社团 R02 | PayloadRequest(summary) | Activity | 允许状态 → 已结束 | 40302,40901 | implemented |
+| POST | `/activities/{activity_id}/end` | FR-16 | 目标社团 R02 | ActivityEndRequest | Activity | 允许状态 → 已结束 | 40302,40901 | implemented |
 
 M04 实现说明：路径、method、FR 映射和角色不变；`Activity` 响应增加 `registration_count`、
 `my_registration_status`，报名名单条目增加 `user` 摘要。状态机、通知事件和验证见

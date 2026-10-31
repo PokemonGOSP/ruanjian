@@ -5,7 +5,7 @@ async function login(page, username, password) {
   await page.getByLabel('用户名').fill(username)
   await page.getByLabel('密码').fill(password)
   await page.getByRole('button', { name: '登录' }).click()
-  await expect(page.getByRole('heading', { name: '首页 / Dashboard' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: '首页' })).toBeVisible()
 }
 
 test('anonymous visitors are redirected to login', async ({ page }) => {
@@ -28,6 +28,8 @@ test('invalid credentials stay on login with an error', async ({ page }) => {
 test('student can log in, browse every module and log out', async ({ page }) => {
   await login(page, 'student01', 'Student123!')
   await expect(page.locator('header')).toContainText('学生一')
+  await expect(page.getByRole('heading', { name: '快捷入口' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: '数据概览' })).toHaveCount(0)
 
   const pages = [
     ['/clubs', '社团注册与年审'],
@@ -66,6 +68,8 @@ test('admin sees account management and audit logs', async ({ page }) => {
 
 test('club leader sees finance data and activity creation', async ({ page }) => {
   await login(page, 'leader01', 'Leader123!')
+  await expect(page.getByRole('heading', { name: '数据概览' })).toBeVisible()
+  await expect(page.getByText('星河读书社').first()).toBeVisible()
 
   await page.goto('/finance')
   await expect(page.getByRole('heading', { name: '经费记录（M05）' })).toBeVisible()

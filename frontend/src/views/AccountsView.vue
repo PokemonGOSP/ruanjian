@@ -364,6 +364,15 @@ onMounted(async () => {
 
 <style scoped>
 .badge + .badge { margin-left: 0.35rem; }
+/* 状态、显示名称与操作列保持单行，避免窄列把中文逐字折行 */
+.data-table th:nth-child(3),
+.data-table td:nth-child(3),
+.data-table th:nth-child(4),
+.data-table td:nth-child(4),
+.data-table th:nth-child(7),
+.data-table td:nth-child(7) {
+  white-space: nowrap;
+}
 .link {
   margin-left: 0.35rem;
   padding: 0;
